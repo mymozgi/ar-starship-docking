@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b0f12">
+<title>AR Starship Docking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--c:#7fdcff;--cs:rgba(127,220,255,.42);--ink:#eef6fa;--mut:rgba(238,246,250,.64);--glass:rgba(10,16,20,.55);--or:#ff9a4a;--gr:#63e6a6}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{position:fixed;inset:0;overflow:hidden;background:#0b0d0f;color:var(--ink);font-family:'Space Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+button{font:inherit;color:inherit;background:none;border:0}
+.mono{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace}
+.glass{background:var(--glass);border:1px solid var(--cs);border-radius:16px;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.35),inset 0 0 22px rgba(127,220,255,.06)}
+.ui{position:fixed;transition:opacity .4s ease,transform .4s ease}
+.off{opacity:0!important;pointer-events:none!important;transform:translateY(10px)}
+.off *{pointer-events:none!important}
+.deco{pointer-events:none}
+
+/* camera feed + fallback room */
+#cam{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;background:#111;display:none}
+#bg{position:fixed;inset:0;z-index:0;background:
+ radial-gradient(18% 26% at 14% 42%,rgba(255,196,128,.42),transparent 70%),
+ radial-gradient(24% 34% at 64% 38%,rgba(176,196,216,.30),transparent 72%),
+ radial-gradient(10% 16% at 88% 46%,rgba(255,184,112,.30),transparent 70%),
+ radial-gradient(60% 10% at 30% 60%,rgba(255,172,104,.10),transparent 70%),
+ linear-gradient(to bottom,#16181a 0%,#33363b 34%,#43464b 48%,#36322e 54%,#29251f 64%,#161412 100%)}
+body.live #bg{display:none}
+body.live #cam{display:block}
+#gl{position:fixed;inset:0;width:100%;height:100%;z-index:1;touch-action:none;display:block}
+
+/* viewfinder + header */
+#vf{position:fixed;inset:12px;pointer-events:none;z-index:4}
+#vf i{position:absolute;width:26px;height:26px;border:0 solid rgba(238,246,250,.55)}
+#vf i:nth-child(1){left:0;top:0;border-width:1.5px 0 0 1.5px;border-top-left-radius:10px}
+#vf i:nth-child(2){right:0;top:0;border-width:1.5px 1.5px 0 0;border-top-right-radius:10px}
+#vf i:nth-child(3){left:0;bottom:0;border-width:0 0 1.5px 1.5px;border-bottom-left-radius:10px}
+#vf i:nth-child(4){right:0;bottom:0;border-width:0 1.5px 1.5px 0;border-bottom-right-radius:10px}
+#hdr{top:calc(24px + env(safe-area-inset-top));left:26px;right:26px;display:flex;justify-content:space-between;align-items:center;z-index:5;pointer-events:none}
+#hdr .r{display:flex;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 12px;border-radius:999px!important;font-size:11px;font-weight:600;letter-spacing:.16em}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--gr);box-shadow:0 0 8px var(--gr);animation:blink 1.8s ease-in-out infinite}
+@keyframes blink{50%{opacity:.35}}
+#clock{color:var(--mut);letter-spacing:.08em;font-weight:500}
+#recenter{pointer-events:auto;cursor:pointer;color:var(--c);padding:0 10px}
+#recenter svg{width:15px;height:15px}
+#cap{top:calc(70px + env(safe-area-inset-top));left:28px;right:28px;pointer-events:none;z-index:5;text-shadow:0 1px 12px rgba(0,0,0,.6)}
+#steps{display:flex;gap:6px;margin-bottom:12px}
+#steps b{width:18px;height:2px;border-radius:2px;background:rgba(238,246,250,.25);transition:background .4s}
+#steps b.on{background:var(--c)}#steps b.done{background:rgba(127,220,255,.45)}
+#capN{font-size:11px;color:var(--c);letter-spacing:.18em;margin-bottom:4px}
+#capT{font-size:21px;font-weight:500;letter-spacing:.06em}
+#capP{font-size:13px;color:var(--mut);margin-top:4px;max-width:340px;line-height:1.4}
+
+/* primary button */
+#ctaw{left:0;right:0;bottom:calc(30px + env(safe-area-inset-bottom));display:flex;justify-content:center;pointer-events:none;z-index:7}
+#cta{pointer-events:auto;min-width:232px;height:58px;padding:0 22px 0 28px;display:flex;align-items:center;justify-content:space-between;gap:22px;font-weight:600;font-size:14px;letter-spacing:.18em;cursor:pointer;border-radius:18px;transition:opacity .4s,transform .2s,border-color .3s,box-shadow .3s}
+#cta svg{width:16px;height:16px;flex:none}
+#cta:active{transform:scale(.97)}
+#cta.lock{opacity:.45;border-color:rgba(238,246,250,.22)}
+#cta.go{border-color:var(--gr);box-shadow:0 0 0 1px rgba(99,230,166,.35),0 0 30px rgba(99,230,166,.3)}
+#cta.shake{animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+/* scan overlay */
+#scan{inset:0;z-index:5}
+#scan .ret{position:absolute;left:50%;top:50%;width:220px;height:220px;margin:-110px 0 0 -110px}
+#scan .spin{transform-box:fill-box;transform-origin:center;animation:spin 2.4s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#scan .line{position:absolute;left:8%;right:8%;height:2px;top:22%;background:linear-gradient(90deg,transparent,var(--c),transparent);box-shadow:0 0 14px var(--c);animation:sweep 1.1s ease-in-out infinite alternate}
+@keyframes sweep{from{top:22%}to{top:78%}}
+#scan .lbl{position:absolute;left:0;right:0;top:50%;margin-top:126px;text-align:center;font-size:12px;letter-spacing:.22em;font-weight:600}
+#scan .lbl span{display:block;margin-top:6px;color:var(--mut);font-size:11px;letter-spacing:.1em;font-weight:400}
+
+/* distance gauge */
+#gauge{right:24px;top:50%;margin-top:-120px;height:240px;width:70px;z-index:5}
+#gauge .gt{position:absolute;right:0;top:0;bottom:0;width:3px;border-radius:3px;background:rgba(238,246,250,.18)}
+#gauge .gf{position:absolute;left:0;right:0;bottom:0;height:100%;background:linear-gradient(to top,var(--or),rgba(255,154,74,.2));border-radius:3px}
+#gauge .gm{position:absolute;right:-5px;width:13px;height:13px;margin-top:-6px;border-radius:50%;border:2px solid var(--or);background:#0b1115;top:0;box-shadow:0 0 10px rgba(255,154,74,.6)}
+#gauge .gl{position:absolute;right:14px;top:-6px;bottom:-6px;display:flex;flex-direction:column;justify-content:space-between;font-size:10px;color:var(--mut);text-align:right}
+#gauge .gv{position:absolute;right:16px;bottom:-30px;font-size:13px;color:var(--or);white-space:nowrap}
+
+/* panels */
+body.pn #cap{opacity:0}
+.panel{top:calc(72px + env(safe-area-inset-top));left:0;right:0;margin:0 auto;width:min(340px,calc(100% - 40px));padding:16px 18px;z-index:6}
+.ah{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;letter-spacing:.16em;font-weight:600;margin-bottom:10px}
+.ah b{font-size:22px;font-weight:500;color:var(--c);letter-spacing:.02em;transition:color .3s}
+.row{display:grid;grid-template-columns:78px 1fr 58px;align-items:center;gap:10px;font-size:11px;letter-spacing:.12em;color:var(--mut);margin-top:9px}
+.row i{height:4px;border-radius:4px;background:rgba(238,246,250,.12);overflow:hidden;display:block}
+.row u{display:block;height:100%;width:50%;background:var(--c);border-radius:4px;transition:width .12s linear,background .3s}
+.row em{font-style:normal;text-align:right;color:var(--ink);font-size:12px;letter-spacing:0}
+.hint{margin-top:12px;font-size:11.5px;color:var(--mut);letter-spacing:.02em;transition:color .3s}
+.pb{height:5px;border-radius:5px;background:rgba(238,246,250,.12);overflow:hidden}
+.pb u{display:block;height:100%;width:0;background:linear-gradient(90deg,#3fb6e8,var(--c));border-radius:5px}
+.ms{display:flex;justify-content:space-between;margin-top:10px;font-size:10px;letter-spacing:.12em;color:rgba(238,246,250,.35)}
+.ms span.on{color:var(--c)}
+#result{border-color:rgba(99,230,166,.6)}
+.rh{display:flex;align-items:center;gap:12px;font-size:15px;font-weight:600;letter-spacing:.12em;color:var(--gr);margin-bottom:12px}
+.rh svg{width:30px;height:30px;flex:none}
+.rr{display:flex;justify-content:space-between;font-size:11px;letter-spacing:.14em;color:var(--mut);padding:7px 0 0 42px}
+.rr b{font-size:15px;color:var(--ink);font-weight:500;letter-spacing:.02em}
+
+/* touch controls */
+#drag{position:fixed;inset:0;z-index:3;touch-action:none;cursor:grab}
+.pad{bottom:calc(116px + env(safe-area-inset-bottom));width:104px;height:104px;border-radius:50%!important;z-index:6;touch-action:none;display:flex;align-items:center;justify-content:center;cursor:grab}
+.pad::before{content:'';position:absolute;inset:14px;border-radius:50%;border:1px dashed rgba(127,220,255,.35)}
+#joy{left:22px}#rot{right:22px}
+#knob{width:38px;height:38px;border-radius:50%;background:rgba(127,220,255,.22);border:1px solid var(--c);box-shadow:0 0 14px rgba(127,220,255,.35)}
+.pad span{position:absolute;bottom:-20px;left:0;right:0;text-align:center;font-size:10px;letter-spacing:.18em;color:var(--mut)}
+#rot svg{width:34px;height:34px;color:var(--c)}
+
+/* spatial labels (projected from 3D) */
+#labels{position:fixed;inset:0;z-index:2;pointer-events:none}
+#labels svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.lbl{position:absolute;left:0;top:0;padding:9px 14px 10px;border-radius:12px;white-space:nowrap;transition:opacity .3s;will-change:transform}
+.lbl .t{font-size:11px;letter-spacing:.16em;font-weight:600}
+.lbl .v{font-size:15px;margin-top:3px}
+#lShip .v{color:var(--or)}#lSt .v{color:var(--c)}
+#edge{position:fixed;left:0;top:0;z-index:4;pointer-events:none;display:flex;align-items:center;gap:8px;transition:opacity .3s;will-change:transform}
+#edge .a{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+#edge .a svg{width:16px;height:16px;color:var(--c)}
+#edge .tx{font-size:10px;letter-spacing:.14em;padding:6px 9px;border-radius:9px!important;white-space:nowrap}
+
+/* intro gate */
+#intro{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;justify-content:flex-end;padding:0 28px calc(34px + env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(6,9,11,.94) 30%,rgba(6,9,11,.45));transition:opacity .5s}
+#intro h1{font-size:30px;font-weight:500;letter-spacing:.08em;line-height:1.1}
+#intro .k{font-size:11px;letter-spacing:.2em;color:var(--c);margin-bottom:10px}
+#intro ul{list-style:none;margin:20px 0 26px;color:var(--mut);font-size:14px;line-height:1.5}
+#intro li{display:flex;gap:10px;margin-top:8px}
+#intro li b{color:var(--c);font-weight:500;font-family:'JetBrains Mono',monospace;font-size:12px;padding-top:2px}
+#go{height:58px;border-radius:18px;font-weight:600;font-size:14px;letter-spacing:.18em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:12px;border-color:var(--c)}
+#go svg{width:16px;height:16px}
+#intro small{display:block;margin-top:14px;text-align:center;color:rgba(238,246,250,.4);font-size:11px;letter-spacing:.04em}
+#toast{left:50%;top:calc(130px + env(safe-area-inset-top));transform:translateX(-50%);z-index:9;padding:10px 14px;font-size:12px;max-width:calc(100% - 40px);text-align:center;border-radius:12px}
+#toast.off{transform:translateX(-50%) translateY(-8px)}
+#err{position:fixed;left:20px;right:20px;top:40%;padding:16px;text-align:center;font-size:13px;z-index:30;display:none}
+@media (max-height:620px){.panel{top:calc(64px + env(safe-area-inset-top))}#capP{display:none}.pad{bottom:100px;width:88px;height:88px}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+</head>
+<body>
+<video id="cam" playsinline muted autoplay></video>
+<div id="bg"></div>
+<canvas id="gl"></canvas>
+<div id="labels">
+ <svg id="lines"><line id="lnShip" stroke="#7fdcff" stroke-width="1.2" stroke-opacity=".8"/><circle id="dtShip" r="3" fill="#7fdcff"/>
+  <line id="lnSt" stroke="#7fdcff" stroke-width="1.2" stroke-opacity=".8"/><circle id="dtSt" r="3.5" fill="#7fdcff"/></svg>
+ <div id="lShip" class="lbl glass"><div class="t">YOUR SHIP</div><div class="v">READY</div></div>
+ <div id="lSt" class="lbl glass"><div class="t" id="lStT">STATION DETECTED</div><div class="v mono" id="lStV">12.4 m</div></div>
+</div>
+<div id="edge"><div class="a glass"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3l6 5-6 5"/></svg></div><div class="tx glass mono" id="edgeT">STATION</div></div>
+<div id="vf"><i></i><i></i><i></i><i></i></div>
+<div id="hdr" class="ui"><div class="chip glass"><span class="dot"></span><span id="mode">AR MODE</span></div>
+ <div class="r"><button id="recenter" class="chip glass" aria-label="Recenter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></button><div class="chip glass mono" id="clock">00:00</div></div></div>
+<div id="cap" class="ui"><div id="steps"><b></b><b></b><b></b><b></b><b></b><b></b><b></b></div><div id="capN">01 / 07</div><div id="capT">AR MODE</div><div id="capP"></div></div>
+<div id="scan" class="ui deco off">
+ <div class="ret"><svg viewBox="0 0 220 220" width="220" height="220">
+  <circle cx="110" cy="110" r="104" fill="none" stroke="rgba(127,220,255,.35)" stroke-width="1"/>
+  <circle class="spin" cx="110" cy="110" r="86" fill="none" stroke="#7fdcff" stroke-width="2" stroke-dasharray="5 11"/>
+  <circle cx="110" cy="110" r="3" fill="#7fdcff"/>
+  <path d="M110 4v20M110 196v20M4 110h20M196 110h20" stroke="#7fdcff" stroke-width="1.5"/></svg></div>
+ <div class="line"></div>
+ <div class="lbl">SCANNING SPACE<span class="mono" id="scanPct">0%</span></div>
+</div>
+<div id="gauge" class="ui deco off"><div class="gt"><div class="gf" id="gFill"></div><div class="gm" id="gMark"></div></div>
+ <div class="gl mono"><span>12 m</span><span>9</span><span>6</span><span>3</span><span>0</span></div><div class="gv mono" id="gVal">12.4 m</div></div>
+<div id="drag" class="off"></div>
+<div id="align" class="ui glass panel off">
+ <div class="ah"><span>ALIGNMENT</span><b class="mono" id="aPct">82%</b></div>
+ <div class="row"><span>X</span><i><u id="bX"></u></i><em class="mono" id="vX">+0.00</em></div>
+ <div class="row"><span>Y</span><i><u id="bY"></u></i><em class="mono" id="vY">+0.00</em></div>
+ <div class="row"><span>ROTATION</span><i><u id="bR"></u></i><em class="mono" id="vR">0.0°</em></div>
+ <div class="hint" id="aHint">Drag to center the ring on the port · twist to level it</div>
+</div>
+<div id="dock" class="ui glass panel off">
+ <div class="ah"><span>DOCKING</span><b class="mono" id="dPct">0%</b></div>
+ <div class="pb"><u id="dFill"></u></div>
+ <div class="ms" id="dMs"><span>25 CAPTURE</span><span>50 SEAL</span><span>75 PRESSURE</span><span>100 LOCK</span></div>
+</div>
+<div id="result" class="ui glass panel off">
+ <div class="rh"><svg viewBox="0 0 24 24" fill="none" stroke="#63e6a6" stroke-width="1.5"><circle cx="12" cy="12" r="10.5"/><path d="M7.4 12.4l3.1 3.1 6.1-6.6"/></svg>DOCKING SUCCESSFUL</div>
+ <div class="rr"><span>ALIGNMENT</span><b class="mono">100%</b></div>
+ <div class="rr"><span>TIME</span><b class="mono" id="rTime">00:00</b></div>
+ <div class="rr"><span>SCORE</span><b class="mono">+200</b></div>
+</div>
+<div id="joy" class="ui pad glass off"><div id="knob"></div><span>MOVE</span></div>
+<div id="rot" class="ui pad glass off"><svg id="rotIco" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4.5 12a7.5 7.5 0 0 1 13-5.1M19.5 12a7.5 7.5 0 0 1-13 5.1"/><path d="M17.8 3.2v4h-4M6.2 20.8v-4h4"/></svg><span>ROTATE</span></div>
+<div id="ctaw" class="ui off"><button id="cta" class="glass"><span id="ctaT">START MISSION</span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 3l5 5-5 5"/></svg></button></div>
+<div id="toast" class="ui glass off"></div>
+<div id="intro">
+ <div class="k">MOBILE AR PROTOTYPE</div>
+ <h1>AR STARSHIP<br>DOCKING</h1>
+ <ul>
+  <li><b>01</b>Allow camera and motion access</li>
+  <li><b>02</b>Hold the phone upright at chest height</li>
+  <li><b>03</b>Dock your ship with the station · ~40 s</li>
+ </ul>
+ <button id="go" class="glass">LAUNCH AR<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 3l5 5-5 5"/></svg></button>
+ <small>Look around by turning your phone. No camera or gyro? It runs as a 3D preview.</small>
+</div>
+<div id="err" class="glass"></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+const $ = (i) => document.getElementById(i);
+const Q = new URLSearchParams(location.search);
+const DEMO = Q.has('demo'), NOCAM = Q.has('nocam');
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const D2R = Math.PI / 180, R2D = 180 / Math.PI;
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x)), c01 = (x) => clamp(x, 0, 1), lerp = (a, b, t) => a + (b - a) * t;
+const damp = (a, b, r, dt) => a + (b - a) * (1 - Math.exp(-r * dt));
+const vdamp = (a, b, r, dt) => a.lerp(b, 1 - Math.exp(-r * dt));
+const eio = (p) => p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2, eo = (p) => 1 - Math.pow(1 - p, 3);
+const back = (p) => { const c = 1.70158, q = p - 1; return 1 + (c + 1) * q * q * q + c * q * q; };
+const bez = (a, b, c, d, t) => { const u = 1 - t; return a.clone().multiplyScalar(u*u*u).addScaledVector(b, 3*u*u*t).addScaledVector(c, 3*u*t*t).addScaledVector(d, t*t*t); };
+const fmt = (s) => { s = Math.max(0, Math.floor(s)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
+let toastT = 0;
+const toast = (m, ms = 3200) => { const t = $('toast'); t.textContent = m; t.classList.remove('off'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.add('off'), ms); };
+
+// ================= renderer =================
+const canvas = $('gl');
+const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setClearColor(0x000000, 0);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(60, 1, 2, 30000);
+camera.rotation.order = 'YXZ';
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.55;
+scene.add(new THREE.HemisphereLight(0xe6eef8, 0x3b342d, 1.1));
+const key = new THREE.DirectionalLight(0xfff2e4, 2.4); key.position.set(380, 900, 700); key.target.position.set(0, 0, -400); scene.add(key, key.target);
+const rim = new THREE.DirectionalLight(0x9cc2ff, 0.8); rim.position.set(-700, 300, -900); scene.add(rim);
+
+// ================= materials =================
+const std = (c, r, m) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m, flatShading: true });
+const glow = (c, o = 1, add = false) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: o, toneMapped: false, depthWrite: !add, blending: add ? THREE.AdditiveBlending : THREE.NormalBlending, side: THREE.DoubleSide });
+const ui = (c, o = .8) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: o, toneMapped: false, depthWrite: false, side: THREE.DoubleSide });
+const M = { white: std(0xe7e3db, .55, .12), char: std(0x2a2c31, .45, .5), orange: std(0xe8722a, .5, .1), glass: std(0x0b0e12, .08, .6),
+  panel: std(0xb9bdc4, .6, .15), metal: std(0x33363b, .45, .55), dark: std(0x14171b, .5, .4), glowO: glow(0xff8a2a) };
+
+// ================= geometry helpers =================
+const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+const cyl = (rt, rb, h, s, open = false) => new THREE.CylinderGeometry(rt, rb, h, s, 1, open);
+function custom(v, ix) { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(v, 3)); g.setIndex(ix); g.computeVertexNormals(); return g; }
+function ringGeo(ro, ri, d, seg) {
+  const s = new THREE.Shape(); s.absarc(0, 0, ro, 0, Math.PI * 2, false);
+  const h = new THREE.Path(); h.absarc(0, 0, ri, 0, Math.PI * 2, true); s.holes.push(h);
+  const g = new THREE.ExtrudeGeometry(s, { depth: d, bevelEnabled: false, curveSegments: seg }); g.translate(0, 0, -d / 2); return g;
+}
+function prep(g, pos = [0, 0, 0], rot = [0, 0, 0]) {
+  g = g.index ? g.toNonIndexed() : g; g.clearGroups(); if (g.attributes.uv) g.deleteAttribute('uv'); if (!g.attributes.normal) g.computeVertexNormals();
+  g.applyMatrix4(new THREE.Matrix4().compose(V(...pos), new THREE.Quaternion().setFromEuler(new THREE.Euler(rot[0] * D2R, rot[1] * D2R, rot[2] * D2R, 'XYZ')), V(1, 1, 1)));
+  return g;
+}
+class Bucket { constructor() { this.m = new Map(); } add(mat, g) { if (!this.m.has(mat)) this.m.set(mat, []); this.m.get(mat).push(g); return this; }
+  build(parent) { for (const [mat, gs] of this.m) parent.add(new THREE.Mesh(mergeGeometries(gs, false), mat)); } }
+function hex(v, ix, T, B, flip) {
+  const o = v.length / 3; for (const p of T) v.push(...p); for (const p of B) v.push(...p);
+  const tr = [[0, 1, 2], [0, 2, 3], [4, 6, 5], [4, 7, 6]]; for (let k = 0; k < 4; k++) { const k1 = (k + 1) % 4; tr.push([k, 4 + k1, k1], [k, 4 + k, 4 + k1]); }
+  for (const t of tr) flip ? ix.push(o + t[0], o + t[2], o + t[1]) : ix.push(o + t[0], o + t[1], o + t[2]);
+}
+const polar = (a, r) => [Math.cos(a * D2R) * r, Math.sin(a * D2R) * r];
+
+// ================= starship (ported from the Spline scene) =================
+const ship = new THREE.Group(); scene.add(ship);
+{
+  const SB = new Bucket();
+  // fuselage loft
+  const secs = [[-152, 3, 3, -2], [-112, 12, 8, -7], [-60, 24, 16, -12], [-15, 32, 22, -15], [40, 36, 22, -16], [90, 30, 18, -14], [106, 22, 13, -10]];
+  let v = [], ix = [];
+  for (const [z, w, t, b] of secs) for (const p of [[w*.55, t], [w, t*.35], [w, b*.5], [w*.6, b], [-w*.6, b], [-w, b*.5], [-w, t*.35], [-w*.55, t]]) v.push(p[0], p[1], z);
+  for (let i = 0; i < secs.length - 1; i++) for (let j = 0; j < 8; j++) { const a = i*8 + j, b = i*8 + (j + 1) % 8; ix.push(a, a + 8, b, b, a + 8, b + 8); }
+  let f = v.length / 3; v.push(0, .5, -154); for (let j = 0; j < 8; j++) ix.push(f, j, (j + 1) % 8);
+  const L = (secs.length - 1) * 8; f = v.length / 3; v.push(0, 1.5, 107); for (let j = 0; j < 8; j++) ix.push(f, L + (j + 1) % 8, L + j);
+  SB.add(M.white, prep(custom(v, ix)));
+  // wings
+  v = []; ix = [];
+  for (const s of [-1, 1]) hex(v, ix, [[s*26, 0, -28], [s*26, 0, 74], [s*106, -10, 86], [s*106, -10, 54]], [[s*26, -9, -28], [s*26, -9, 74], [s*106, -14, 86], [s*106, -14, 54]], s < 0);
+  SB.add(M.white, prep(custom(v, ix)));
+  // cockpit canopy
+  v = []; ix = [];
+  const cs = [[-88, 3, 1, 9.5], [-62, 12, 8, 14], [-28, 15, 13, 19], [0, 13, 12, 20.8], [14, 7, 5, 21]];
+  for (const [z, w, h, y0] of cs) for (const p of [[w, y0], [w*.62, y0 + h], [-w*.62, y0 + h], [-w, y0]]) v.push(p[0], p[1], z);
+  for (let i = 0; i < cs.length - 1; i++) for (let j = 0; j < 4; j++) { const a = i*4 + j, b = i*4 + (j + 1) % 4; ix.push(a, b, a + 4, b, b + 4, a + 4); }
+  f = v.length / 3; v.push(0, 10, -89); for (let j = 0; j < 4; j++) ix.push(f, (j + 1) % 4, j);
+  const L2 = (cs.length - 1) * 4; f = v.length / 3; v.push(0, 23, 15); for (let j = 0; j < 4; j++) ix.push(f, L2 + j, L2 + (j + 1) % 4);
+  SB.add(M.glass, prep(custom(v, ix)));
+  // details
+  SB.add(M.char, prep(box(18, 8, 80), [0, 21.5, 55]));
+  for (const s of [-1, 1]) {
+    SB.add(M.char, prep(box(6, 12, 40), [s*34, 1, 8]))
+      .add(M.char, prep(cyl(3, 3, 34, 8), [s*6, -4, -160], [90, 0, 0]))
+      .add(M.orange, prep(box(7, 2, 30), [s*13, 22, 28]))
+      .add(M.orange, prep(box(30, 2, 10), [s*78, -6.3, 70], [0, 0, -s*7.1]));
+    const ex = s*60, ey = 2, ez = 55;
+    SB.add(M.white, prep(cyl(24, 24, 100, 8), [ex, ey, ez], [90, 22.5, 0]))
+      .add(M.char, prep(cyl(26.5, 26.5, 18, 8), [ex, ey, ez + 46], [90, 22.5, 0]))
+      .add(M.orange, prep(cyl(25, 25, 7, 8), [ex, ey, ez + 12], [90, 22.5, 0]))
+      .add(M.char, prep(cyl(19, 19, 4, 16), [ex, ey, ez - 50.5], [90, 0, 0]))
+      .add(M.char, prep(box(16, 12, 60), [s*38, 2, 55]));
+    v = []; ix = [];
+    hex(v, ix, [[2, 0, -30], [2, 56, 12], [2, 56, 34], [2, 0, 30]], [[-2, 0, -30], [-2, 56, 12], [-2, 56, 34], [-2, 0, 30]], false);
+    SB.add(M.white, prep(custom(v, ix), [s*60, 22, 68], [0, 0, -s*12]))
+      .add(M.glowO, prep(box(5, 3, 22), [s*71.6, 77.5, 91], [0, 0, -s*12]))
+      .add(M.glowO, prep(box(5, 4.5, 16), [s*106, -12, 70]))
+      .add(M.glowO, prep(box(4, 4, 14), [s*16, 0, -95]));
+  }
+  SB.build(ship);
+}
+const engGlowMat = glow(0xffc27a), plumeMat = glow(0xffa24d, .6, true);
+const engines = [-1, 1].map((s) => {
+  const g = new THREE.Mesh(cyl(16, 16, 3, 20), engGlowMat); g.rotation.x = 90 * D2R; g.position.set(s*60, 2, 111);
+  const p = new THREE.Mesh(cyl(2.1, 14, 46, 16, true), plumeMat); p.rotation.x = 90 * D2R; p.position.set(s*60, 2, 135.5);
+  ship.add(g, p); return { g, p, s };
+});
+const engLight = new THREE.PointLight(0xff8a3a, 2.2, 260, 1); engLight.position.set(0, -10, 175); ship.add(engLight);
+
+// ================= docking station =================
+const C = V(0, 180, -1500), MOUTH = V(0, 180, -1370);
+const station = new THREE.Group(); station.position.copy(C); scene.add(station);
+const glowSet = (color, parts, o = 1) => { const gs = parts.map(([g, pos, rot]) => prep(g, pos, rot)); const m = new THREE.Mesh(mergeGeometries(gs, false), glow(color, o)); station.add(m); return m; };
+{
+  const B = new Bucket();
+  B.add(M.panel, prep(ringGeo(370, 318, 56, 48))).add(M.metal, prep(ringGeo(326, 293, 78, 48)));
+  for (let k = 0; k < 4; k++) B.add(M.metal, prep(box(96, 44, 84), [...polar(k*90, 382), 0], [0, 0, k*90 - 90]));
+  for (let k = 0; k < 4; k++) B.add(M.panel, prep(box(26, 152, 40), [...polar(45 + k*90, 226), 0], [0, 0, 45 + k*90 - 90]));
+  B.add(M.metal, prep(cyl(5, 5, 60, 8), [0, 434, 0])).add(M.metal, prep(cyl(5, 5, 90, 8), [0, -449, 0]))
+   .add(M.glowO, prep(new THREE.SphereGeometry(7, 12, 8), [0, 470, 0])).add(M.glowO, prep(new THREE.SphereGeometry(6, 12, 8), [0, -496, 0]))
+   .add(M.metal, prep(ringGeo(152, 115.5, 260, 32))).add(M.panel, prep(ringGeo(168, 133, 22, 32), [0, 0, 137]))
+   .add(M.dark, prep(cyl(120, 120, 8, 32), [0, 0, -124], [90, 0, 0]));
+  B.build(station);
+}
+const podLights = glowSet(0xeaf6ff, [0, 1, 2, 3].map((k) => [box(60, 5, 3), [...polar(k*90, 382), 43.5], [0, 0, k*90 - 90]]));
+const ringLights = glowSet(0xff8a2a, [...Array(16)].map((_, k) => [box(12, 5, 3), [...polar(11.25 + k*22.5, 344), 29.5], [0, 0, 11.25 + k*22.5 - 90]]));
+const portLights = glowSet(0xe8f6ff, [...Array(12)].map((_, k) => [box(9, 5, 3), [...polar(k*30, 151), 149.5], [0, 0, k*30 - 90]]));
+const tunnelLights = [95, 15, -65].map((z) => glowSet(0xcdf3ff, [...Array(8)].map((_, k) => [box(10, 4, 34), [...polar(22.5 + k*45, 113.5), z], [0, 0, 22.5 + k*45 - 90]]), .15));
+const portGlow = new THREE.Mesh(ringGeo(129, 119, 3, 64), glow(0x9fe8ff, .65)); portGlow.position.z = 132.5; station.add(portGlow);
+const portTarget = new THREE.Mesh(ringGeo(60, 52, 3, 48), glow(0xff8a2a, .6)); portTarget.position.z = -120.5; station.add(portTarget);
+
+// ================= spatial markers =================
+const ring2 = (ri, ro, seg = 96) => new THREE.RingGeometry(ri, ro, seg);
+const anchor = new THREE.Group(); anchor.position.set(0, -73, 300); scene.add(anchor);
+{
+  const a1 = new THREE.Mesh(ring2(142.5, 150), ui(0x7fdcff, .6)), a2 = new THREE.Mesh(ring2(103, 106), ui(0x7fdcff, .35));
+  a1.rotation.x = a2.rotation.x = -90 * D2R; a2.position.y = -.5;
+  const sc = document.createElement('canvas'); sc.width = sc.height = 128; const cx = sc.getContext('2d');
+  const gr = cx.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(0,0,0,.6)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); cx.fillStyle = gr; cx.fillRect(0, 0, 128, 128);
+  const sh = new THREE.Mesh(new THREE.PlaneGeometry(260, 300), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, depthWrite: false, toneMapped: false }));
+  sh.rotation.x = -90 * D2R; sh.position.set(0, -1, -10);
+  anchor.add(sh, a1, a2);
+}
+const scanWave = new THREE.Mesh(ring2(291, 300), ui(0x9fe6ff, .8)); scene.add(scanWave);
+const stReticle = new THREE.Group(); stReticle.position.set(0, 180, -1430); scene.add(stReticle);
+{ const m = ui(0x7fdcff, .65); stReticle.add(new THREE.Mesh(ring2(465, 470, 128), m));
+  for (let k = 0; k < 4; k++) { const t = new THREE.Mesh(box(4, 40, 1), m); t.position.set(...polar(k*90, 496), 0); t.rotation.z = (k*90 - 90) * D2R; stReticle.add(t); } }
+const chevGeo = new THREE.BufferGeometry();
+chevGeo.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, -16, 26, 0, 6, 26, 0, 15, 0, 0, -7, -26, 0, 15, -26, 0, 6].map((n) => n * 1.6), 3)); chevGeo.setIndex([0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5]);
+const chevMat = ui(0x7fdcff, .9);
+const chevrons = [...Array(5)].map(() => { const m = new THREE.Mesh(chevGeo, chevMat); m.rotation.order = 'YXZ'; scene.add(m); return m; });
+const arMat = ui(0x7fdcff, .75);
+const alignRet = new THREE.Group(); alignRet.position.set(0, 180, -1340); scene.add(alignRet);
+{ alignRet.add(new THREE.Mesh(ring2(195, 200, 128), arMat)); const i = new THREE.Mesh(ring2(71, 75), arMat); i.position.z = .6; alignRet.add(i);
+  for (let k = 0; k < 4; k++) { const t = new THREE.Mesh(box(3, 56, 1), arMat); t.position.set(...polar(k*90, 130), 0); t.rotation.z = (k*90 - 90) * D2R; alignRet.add(t); } }
+const bsMat = ui(0xffa040, .95);
+const bores = new THREE.Group(); scene.add(bores);
+{ bores.add(new THREE.Mesh(ring2(44, 48), bsMat)); const t = new THREE.Mesh(box(3, 15, 1), bsMat); t.position.y = 57; bores.add(t); bores.add(new THREE.Mesh(new THREE.CircleGeometry(4.5, 16), bsMat)); }
+const pulse = new THREE.Mesh(ring2(163, 170), ui(0x63e6a6, .9)); pulse.position.set(0, 180, -1334); scene.add(pulse);
+const pickShip = [], pickStation = []; ship.traverse((o) => o.isMesh && pickShip.push(o)); station.traverse((o) => o.isMesh && pickStation.push(o));
+
+// ================= flow constants =================
+const SHIP0 = V(0, 40, 300), ALIGN_P = V(0, 180, -1167), DOCK_P = V(0, 180, -1478), ST_TOP = V(0, 655, -1500);
+const D0 = SHIP0.distanceTo(MOUTH), MPU = 12.4 / D0;
+const OFF = { START: V(0, 125, 420), SCAN: V(30, 120, 470), DETECTED: V(30, 115, 470), APPROACH: V(0, 105, 440), ALIGN: V(0, 80, 420), DOCKING: V(0, 60, 420), SUCCESS: V(0, 150, 1150) };
+const MIS = { x: 12, y: -8, r: 8 }, RX = 60, RY = 60, RR = 40;
+const SCAN_DUR = 2.4, APPR_DUR = 7.5, DOCK_DUR = 5.5;
+const STATES = ['START', 'SCAN', 'DETECTED', 'APPROACH', 'ALIGN', 'DOCKING', 'SUCCESS'];
+const COPY = {
+  START: ['01', 'AR MODE', 'Your ship is anchored in front of you. Ready for launch.'],
+  SCAN: ['02', 'SCANNING SPACE', 'Slowly sweep your phone across the room.'],
+  DETECTED: ['03', 'STATION DETECTED', 'A docking station appeared 12.4 m ahead.'],
+  APPROACH: ['04', 'APPROACH', 'Autopilot engaged. Keep the ship in view.'],
+  ALIGN: ['05', 'ALIGNMENT', 'Center the ship on the port and level it.'],
+  DOCKING: ['06', 'DOCKING SEQUENCE', 'Automatic docking in progress.'],
+  SUCCESS: ['07', 'DOCKED', 'Docking successful. The station is yours.'],
+  EXPLORE: ['07', 'EXPLORE STATION', 'Drag to spin the station. Replay any time.'] };
+const CTA = { START: 'START MISSION', DETECTED: 'APPROACH', ALIGN: 'DOCK', SUCCESS: 'EXPLORE STATION', EXPLORE: 'REPLAY MISSION' };
+const VIS3D = [[anchor, ['START', 'SCAN', 'DETECTED']], [scanWave, ['SCAN']], [stReticle, ['DETECTED']], [alignRet, ['ALIGN']], [bores, ['ALIGN']], [pulse, ['SUCCESS', 'EXPLORE']]];
+const CHEV = ['DETECTED', 'APPROACH'];
+const VISUI = { scan: ['SCAN'], gauge: ['DETECTED', 'APPROACH'], align: ['ALIGN'], joy: ['ALIGN'], rot: ['ALIGN'], drag: ['ALIGN', 'EXPLORE'], dock: ['DOCKING'], result: ['SUCCESS'] };
+
+// ================= runtime state =================
+let state = 'INTRO', sT = 0, T = 0, missionStart = null;
+const shipP = SHIP0.clone(), shipR = V(0, 0, 0);
+let ax = 0, ay = 0, ar = 0, locked = false, snapping = false, snapFrom = null, snapT = 0, dragging = 0, spin = 0, spinDrag = 0;
+let shipYaw = 32, camP = null, camA = null, lookYaw = 0, lookPitch = 0, uiT = 0, frame = 0;
+const joy = { active: false, x: 0, y: 0, id: null, cx: 0, cy: 0 };
+const alignment = () => { const xs = 1 - Math.abs(ax) / RX, ys = 1 - Math.abs(ay) / RY, rs = 1 - Math.abs(ar) / RR; return { A: 100 * (.35*xs + .35*ys + .3*rs), xs, ys, rs }; };
+const setTun = (a) => tunnelLights.forEach((m) => m.material.opacity = a);
+
+function enter(s) {
+  state = s; sT = T;
+  const idx = STATES.indexOf(s === 'EXPLORE' ? 'SUCCESS' : s);
+  [...$('steps').children].forEach((b, i) => b.className = i < idx ? 'done' : (i === idx ? 'on' : ''));
+  const c = COPY[s]; $('capN').textContent = c[0] + ' / 07'; $('capT').textContent = c[1]; $('capP').textContent = c[2];
+  for (const [o, list] of VIS3D) o.visible = list.includes(s);
+  chevrons.forEach((m) => m.visible = CHEV.includes(s));
+  for (const k in VISUI) $(k).classList.toggle('off', !VISUI[k].includes(s));
+  document.body.classList.toggle('pn', ['ALIGN', 'DOCKING', 'SUCCESS'].includes(s));
+  const cta = $('cta');
+  if (CTA[s]) { $('ctaT').textContent = CTA[s]; $('ctaw').classList.remove('off'); } else $('ctaw').classList.add('off');
+  cta.classList.toggle('lock', s === 'ALIGN'); cta.classList.toggle('go', s === 'SUCCESS');
+  if (s === 'START') { missionStart = null; $('clock').textContent = '00:00'; ax = ay = ar = 0; locked = snapping = false; spin = 0;
+    station.scale.setScalar(.001); station.rotation.y = 0; portGlow.material.color.set(0x9fe8ff); bsMat.color.set(0xffa040); arMat.color.set(0x7fdcff); setTun(.15); }
+  if (s === 'SCAN') { missionStart = T; station.scale.setScalar(.001); }
+  if (s === 'DETECTED') { station.scale.setScalar(1); $('lStT').textContent = 'STATION DETECTED'; $('lStV').textContent = '12.4 m'; }
+  if (s === 'APPROACH') $('lStT').textContent = 'APPROACH';
+  if (s === 'ALIGN') { ax = MIS.x; ay = MIS.y; ar = MIS.r; locked = snapping = false; arMat.color.set(0x7fdcff); bsMat.color.set(0xffa040);
+    $('aHint').textContent = 'Drag to center the ring on the port · twist to level it'; $('aHint').style.color = ''; }
+  if (s === 'SUCCESS') { const t = T - (missionStart ?? T); $('rTime').textContent = fmt(t); $('clock').textContent = fmt(t); portGlow.material.color.set(0x63e6a6); setTun(1); }
+  if (navigator.vibrate && s !== 'START') try { navigator.vibrate(18); } catch (e) {}
+}
+function onLock() {
+  locked = true; arMat.color.set(0x63e6a6); bsMat.color.set(0x63e6a6);
+  $('cta').classList.remove('lock'); $('cta').classList.add('go');
+  $('aHint').textContent = 'Locked on. Tap DOCK to begin the sequence.'; $('aHint').style.color = 'var(--gr)';
+  if (navigator.vibrate) try { navigator.vibrate([20, 40, 20]); } catch (e) {}
+}
+function primary() {
+  if (state === 'START') enter('SCAN');
+  else if (state === 'DETECTED') enter('APPROACH');
+  else if (state === 'ALIGN') { if (locked) enter('DOCKING'); else { const b = $('cta'); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); } }
+  else if (state === 'SUCCESS') enter('EXPLORE');
+  else if (state === 'EXPLORE') enter('START');
+}
+$('cta').addEventListener('click', primary);
+
+// ================= device orientation (3DoF) =================
+let devQ = null, gyro = false, needCal = true;
+const yawFix = new THREE.Quaternion(), tmpQ = new THREE.Quaternion(), tgtQ = new THREE.Quaternion();
+const zee = V(0, 0, 1), eul = new THREE.Euler(), q0 = new THREE.Quaternion(), q1 = new THREE.Quaternion(-Math.sqrt(.5), 0, 0, Math.sqrt(.5));
+const screenAngle = () => ((screen.orientation && screen.orientation.angle) || window.orientation || 0) * D2R;
+addEventListener('deviceorientation', (e) => {
+  if (e.alpha == null || e.beta == null) return;
+  eul.set(e.beta * D2R, e.alpha * D2R, -e.gamma * D2R, 'YXZ');
+  tmpQ.setFromEuler(eul).multiply(q1).multiply(q0.setFromAxisAngle(zee, -screenAngle()));
+  if (!devQ) devQ = new THREE.Quaternion();
+  devQ.copy(tmpQ); gyro = true;
+});
+function focusPoint() {
+  switch (state) {
+    case 'START': case 'INTRO': return shipP.clone();
+    case 'SCAN': case 'DETECTED': return V(0, 160, -700);
+    case 'APPROACH': return shipP.clone().lerp(MOUTH, .55);
+    case 'ALIGN': return MOUTH.clone().add(V(0, 25, 0));
+    case 'DOCKING': return shipP.clone();
+    default: return C.clone();
+  }
+}
+function calibrate() {
+  if (gyro && devQ && camP) {
+    const f = V(0, 0, -1).applyQuaternion(devQ), d = focusPoint().sub(camP);
+    yawFix.setFromAxisAngle(V(0, 1, 0), Math.atan2(-d.x, -d.z) - Math.atan2(-f.x, -f.z)); needCal = false;
+  }
+  lookYaw = lookPitch = 0;
+}
+$('recenter').addEventListener('click', () => { calibrate(); toast('View recentered'); });
+
+// ================= camera feed + permissions =================
+const video = $('cam');
+async function launch() {
+  const intro = $('intro');
+  let motionAsk = null;
+  try { if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') motionAsk = DeviceOrientationEvent.requestPermission(); } catch (e) {}
+  let camOK = false;
+  if (!NOCAM && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } });
+      video.srcObject = stream; await video.play(); camOK = true; document.body.classList.add('live');
+      video.addEventListener('loadedmetadata', resize);
+    } catch (e) { console.warn('camera', e); }
+  }
+  let motionOK = true;
+  if (motionAsk) { try { motionOK = (await motionAsk) === 'granted'; } catch (e) { motionOK = false; } }
+  intro.style.opacity = 0; setTimeout(() => intro.remove(), 500);
+  $('mode').textContent = camOK ? 'AR MODE' : '3D PREVIEW';
+  enter('START'); resize();
+  setTimeout(() => {
+    if (!gyro) toast(camOK ? 'No motion sensor access — drag to look around.' : 'Camera unavailable — running as a 3D preview. Drag to look around.', 4200);
+    else if (!camOK) toast('Camera unavailable — showing a 3D preview background.', 4200);
+  }, motionOK ? 900 : 200);
+}
+$('go').addEventListener('click', launch, { once: true });
+
+// ================= input =================
+const canMove = () => state === 'ALIGN' && !locked && !snapping;
+let dp = null; const dragEl = $('drag');
+dragEl.addEventListener('pointerdown', (e) => { if (state === 'EXPLORE') { dp = { id: e.pointerId, x: e.clientX, y: e.clientY }; spinDrag++; dragEl.setPointerCapture(e.pointerId); return; }
+  if (!canMove()) return; dp = { id: e.pointerId, x: e.clientX, y: e.clientY }; dragging++; dragEl.setPointerCapture(e.pointerId); });
+dragEl.addEventListener('pointermove', (e) => { if (!dp || e.pointerId !== dp.id) return; const dx = e.clientX - dp.x, dy = e.clientY - dp.y; dp.x = e.clientX; dp.y = e.clientY;
+  if (state === 'EXPLORE') { spin += dx * .35; return; } if (!canMove()) return; ax += dx * .14; ay -= dy * .14; });
+const endDrag = (e) => { if (dp && e.pointerId === dp.id) { dp = null; dragging = Math.max(0, dragging - 1); spinDrag = Math.max(0, spinDrag - 1); } };
+dragEl.addEventListener('pointerup', endDrag); dragEl.addEventListener('pointercancel', endDrag);
+
+const joyEl = $('joy'), knob = $('knob');
+const moveJoy = (e) => { let dx = e.clientX - joy.cx, dy = e.clientY - joy.cy; const m = Math.hypot(dx, dy), R = 32; if (m > R) { dx *= R / m; dy *= R / m; } joy.x = dx / R; joy.y = dy / R; knob.style.transform = `translate(${dx}px,${dy}px)`; };
+joyEl.addEventListener('pointerdown', (e) => { if (!canMove()) return; const r = joyEl.getBoundingClientRect(); Object.assign(joy, { active: true, id: e.pointerId, cx: r.left + r.width / 2, cy: r.top + r.height / 2 }); joyEl.setPointerCapture(e.pointerId); moveJoy(e); });
+joyEl.addEventListener('pointermove', (e) => { if (joy.active && e.pointerId === joy.id) moveJoy(e); });
+const endJoy = (e) => { if (e.pointerId === joy.id) { joy.active = false; joy.x = joy.y = 0; knob.style.transform = ''; } };
+joyEl.addEventListener('pointerup', endJoy); joyEl.addEventListener('pointercancel', endJoy);
+
+let rp = null; const rotEl = $('rot');
+rotEl.addEventListener('pointerdown', (e) => { if (!canMove()) return; rp = { id: e.pointerId, x: e.clientX }; dragging++; rotEl.setPointerCapture(e.pointerId); });
+rotEl.addEventListener('pointermove', (e) => { if (!rp || e.pointerId !== rp.id || !canMove()) return; ar += (e.clientX - rp.x) * .09; rp.x = e.clientX; });
+const endRot = (e) => { if (rp && e.pointerId === rp.id) { rp = null; dragging = Math.max(0, dragging - 1); } };
+rotEl.addEventListener('pointerup', endRot); rotEl.addEventListener('pointercancel', endRot);
+
+// canvas: tap ship/station, and drag-to-look when there is no gyro
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(); let cp = null;
+canvas.addEventListener('pointerdown', (e) => { cp = { id: e.pointerId, x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY }; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener('pointermove', (e) => { if (!cp || e.pointerId !== cp.id) return; if (!gyro) { lookYaw -= (e.clientX - cp.x) * .15; lookPitch = clamp(lookPitch - (e.clientY - cp.y) * .15, -50, 50); lookYaw = clamp(lookYaw, -120, 120); } cp.x = e.clientX; cp.y = e.clientY; });
+canvas.addEventListener('pointerup', (e) => {
+  if (!cp || e.pointerId !== cp.id) return; const tap = Math.hypot(e.clientX - cp.sx, e.clientY - cp.sy) < 8; cp = null; if (!tap) return;
+  ndc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
+  if (state === 'START' && ray.intersectObjects(pickShip, false).length) enter('SCAN');
+  else if (state === 'DETECTED' && ray.intersectObjects(pickStation, false).length) enter('APPROACH');
+});
+const keys = new Set();
+addEventListener('keydown', (e) => { if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyQ', 'KeyE'].includes(e.code)) { keys.add(e.code); e.preventDefault(); }
+  if ((e.code === 'Enter' || e.code === 'Space') && !e.repeat && state !== 'INTRO') { e.preventDefault(); primary(); } });
+addEventListener('keyup', (e) => keys.delete(e.code));
+addEventListener('blur', () => { keys.clear(); dp = rp = cp = null; dragging = spinDrag = 0; joy.active = false; joy.x = joy.y = 0; knob.style.transform = ''; });
+document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+
+// ================= sizing / field of view =================
+let hfov = 60, K = 1;
+function resize() {
+  const W = innerWidth, H = innerHeight, sa = W / H; renderer.setSize(W, H, false); camera.aspect = sa;
+  const LONG = 64 * D2R; let va = video.videoWidth && video.videoHeight ? video.videoWidth / video.videoHeight : (sa < 1 ? .75 : 4 / 3);
+  let vV, hV; if (va < 1) { vV = LONG; hV = 2 * Math.atan(Math.tan(LONG / 2) * va); } else { hV = LONG; vV = 2 * Math.atan(Math.tan(LONG / 2) / va); }
+  const vf = sa < va ? vV : 2 * Math.atan(Math.tan(hV / 2) / sa);
+  camera.fov = vf * R2D; camera.updateProjectionMatrix();
+  hfov = 2 * Math.atan(Math.tan(vf / 2) * sa); K = clamp(Math.tan(26 * D2R) / Math.tan(hfov / 2), 1, 2.2);
+}
+addEventListener('resize', resize); addEventListener('orientationchange', () => setTimeout(resize, 200)); resize();
+
+// ================= spatial labels =================
+const pv = V(0, 0, 0), pc = V(0, 0, 0);
+function toScreen(p) {
+  pc.copy(p).applyMatrix4(camera.matrixWorldInverse); const behind = pc.z > 0;
+  pv.copy(p).project(camera); let x = pv.x, y = pv.y; if (behind) { x = -x; y = -y; }
+  return { x: (x + 1) / 2 * innerWidth, y: (1 - y) / 2 * innerHeight, nx: x, ny: y, behind, on: !behind && Math.abs(pv.x) < .94 && Math.abs(pv.y) < .94 };
+}
+function placeLabel(el, ln, dt, anchorP, lift, show) {
+  const s = toScreen(anchorP); const vis = show && s.on;
+  el.style.opacity = vis ? 1 : 0; ln.style.opacity = dt.style.opacity = vis ? 1 : 0; if (!vis) return s;
+  const h = el.offsetHeight, ly = Math.max(s.y - lift, 168 + h);
+  el.style.transform = `translate(${s.x}px,${ly}px) translate(-50%,-100%)`;
+  ln.setAttribute('x1', s.x); ln.setAttribute('y1', ly); ln.setAttribute('x2', s.x); ln.setAttribute('y2', s.y - 4);
+  dt.setAttribute('cx', s.x); dt.setAttribute('cy', s.y); return s;
+}
+function placeEdge(p, text, show) {
+  const el = $('edge'); const s = toScreen(p);
+  if (!show || s.on) { el.style.opacity = 0; return; }
+  let dx = s.nx, dy = -s.ny; if (Math.hypot(dx, dy) < 1e-3) dy = 1; const L = Math.hypot(dx, dy); dx /= L; dy /= L;
+  const W = innerWidth, H = innerHeight, t = Math.min((W / 2 - 50) / Math.max(1e-3, Math.abs(dx)), (H / 2 - 120) / Math.max(1e-3, Math.abs(dy)));
+  const x = W / 2 + dx * t, y = H / 2 + dy * t;
+  el.style.opacity = 1; el.style.transform = `translate(${x - 17}px,${y - 17}px)`;
+  el.querySelector('.a svg').style.transform = `rotate(${Math.atan2(dy, dx) * R2D}deg)`;
+  const tx = $('edgeT'); tx.textContent = text; tx.style.display = dx > .2 ? 'none' : ''; el.style.flexDirection = dx < -.2 ? 'row' : 'row-reverse';
+  if (dx > .2) el.style.transform = `translate(${x - 17}px,${y - 17}px)`;
+}
+
+// ================= demo autoplay (?demo) =================
+function demoStep(st, dt) {
+  if (state === 'START' && st > 3) enter('SCAN');
+  else if (state === 'DETECTED' && st > 4) enter('APPROACH');
+  else if (state === 'ALIGN' && st > 3 && !locked && !snapping) { ax = damp(ax, 0, 2.5, dt); ay = damp(ay, 0, 2.5, dt); ar = damp(ar, 0, 2.5, dt); }
+  else if (state === 'ALIGN' && locked && T - snapT > 2.5) enter('DOCKING');
+  else if (state === 'SUCCESS' && st > 6) enter('EXPLORE');
+}
+
+// ================= per-frame update =================
+const tmpV = V(0, 0, 0);
+function update(dt) {
+  const st = T - sT, bob = Math.sin(T * 1.7) * 2.4; let ef = 1;
+  if (DEMO) demoStep(st, dt);
+  if (state === 'START' || state === 'SCAN' || state === 'DETECTED' || state === 'INTRO') {
+    // parked at a 3/4 hero angle, then turns its nose to the station once the mission starts
+    shipYaw = damp(shipYaw, state === 'START' || state === 'INTRO' ? 32 : 0, 2.2, dt);
+    shipP.set(SHIP0.x, SHIP0.y + bob, SHIP0.z); shipR.set(Math.sin(T * .9) * 1.2, shipYaw, Math.sin(T * 1.1) * 1.4);
+  }
+  if (state === 'SCAN') {
+    const k = c01(st / 1.9); scanWave.position.lerpVectors(V(SHIP0.x, SHIP0.y + 60, SHIP0.z - 160), V(C.x, C.y, C.z + 150), eo(k));
+    const s = lerp(.35, 1.9, k); scanWave.scale.set(s, s, 1); scanWave.material.opacity = .9 * (1 - k);
+    station.scale.setScalar(Math.max(.001, back(c01((st - 1.2) / .9))));
+    if (frame % 6 === 0) $('scanPct').textContent = Math.round(c01(st / SCAN_DUR) * 100) + '%';
+    if (st >= SCAN_DUR) enter('DETECTED');
+  }
+  if (state === 'APPROACH') {
+    const u = c01(st / APPR_DUR), e = eio(u), end = V(ALIGN_P.x + MIS.x, ALIGN_P.y + MIS.y, ALIGN_P.z);
+    const p1 = V(SHIP0.x, SHIP0.y + 70, SHIP0.z - 450), p2 = V(end.x, end.y - 20, end.z + 520);
+    const b = bez(SHIP0, p1, p2, end, e), d = bez(SHIP0, p1, p2, end, Math.min(1, e + .01)).sub(b);
+    const pitch = (Math.abs(d.z) + Math.abs(d.y) > .01) ? clamp(Math.atan2(d.y, -d.z) * R2D, -12, 12) : 0;
+    shipP.set(b.x, b.y + bob * (1 - e), b.z);
+    shipR.set(damp(shipR.x, pitch, 4, dt), 0, lerp(0, MIS.r, eo(c01((u - .55) / .45))) + Math.sin(T * 1.3) * 1.5 * (1 - u));
+    if (u >= 1) enter('ALIGN');
+  }
+  if (state === 'ALIGN') {
+    ef = .85;
+    if (canMove()) {
+      if (joy.active) { ax += joy.x * 30 * dt; ay -= joy.y * 30 * dt; }
+      if (keys.has('ArrowLeft')) ax -= 25 * dt; if (keys.has('ArrowRight')) ax += 25 * dt;
+      if (keys.has('ArrowUp')) ay += 25 * dt; if (keys.has('ArrowDown')) ay -= 25 * dt;
+      if (keys.has('KeyQ')) ar += 15 * dt; if (keys.has('KeyE')) ar -= 15 * dt;
+    }
+    ax = clamp(ax, -RX, RX); ay = clamp(ay, -RY, RY); ar = clamp(ar, -RR, RR);
+    if (snapping) { const k = eio(c01((T - snapT) / .55)); ax = lerp(snapFrom.x, 0, k); ay = lerp(snapFrom.y, 0, k); ar = lerp(snapFrom.r, 0, k); if (k >= 1) { snapping = false; onLock(); } }
+    const al = alignment();
+    if (!locked && !snapping && al.A >= 95 && dragging === 0 && !joy.active && keys.size === 0) { snapping = true; snapT = T; snapFrom = { x: ax, y: ay, r: ar }; }
+    shipP.set(ALIGN_P.x + ax, ALIGN_P.y + ay + bob * .4, ALIGN_P.z); shipR.set(Math.sin(T * .9) * .5, 0, ar);
+    bores.position.set(ALIGN_P.x + ax * 2, ALIGN_P.y + ay * 2, MOUTH.z + 34); bores.rotation.z = ar * 1.5 * D2R;
+    if (!locked) bsMat.color.set(al.A >= 95 ? 0x63e6a6 : al.A >= 88 ? 0x7fdcff : 0xffa040);
+    const br = locked ? .94 : 1 + Math.sin(T * 2.4) * .015; alignRet.scale.set(br, br, 1);
+  }
+  if (state === 'DOCKING') {
+    const e = eio(c01(st / DOCK_DUR)); shipP.lerpVectors(ALIGN_P, DOCK_P, e); shipR.set(0, 0, 0); ef = lerp(.85, .25, e);
+    tunnelLights.forEach((m, i) => m.material.opacity = e >= (i + 1) * .25 ? 1 : .15);
+    if (st >= DOCK_DUR) enter('SUCCESS');
+  }
+  if (state === 'SUCCESS' || state === 'EXPLORE') {
+    ef = state === 'SUCCESS' ? lerp(.25, 0, c01(st / .8)) : 0;
+    if (state === 'EXPLORE' && spinDrag === 0) spin += dt * 8;
+    const th = (state === 'EXPLORE' ? spin : 0) * D2R; station.rotation.y = th;
+    tmpV.copy(DOCK_P).sub(C).applyAxisAngle(V(0, 1, 0), th); shipP.copy(C).add(tmpV); shipR.set(0, th * R2D, 0);
+    const k = (st % 2.2) / 2.2, on = state === 'SUCCESS' && st < 4.4, s = on ? 1 + k * 2.4 : .001;
+    pulse.scale.set(s, s, 1); pulse.material.opacity = on ? .9 * (1 - k) : 0;
+  }
+
+  // ship + engines
+  ship.position.copy(shipP); ship.rotation.set(shipR.x * D2R, shipR.y * D2R, shipR.z * D2R);
+  const fl = 1 + Math.sin(T * 31) * .07 + Math.sin(T * 17.3) * .05, L = Math.max(.001, ef * fl), w = ef > .01 ? .6 + .4 * ef : .001, g = ef > .02 ? .74 + .12 * ef * fl : .001;
+  for (const en of engines) { en.p.scale.set(w, L, w); en.p.position.z = 57.5 + 55 + 23 * L; en.g.scale.set(g, 1, g); }
+  engLight.intensity = 2.2 * ef;
+
+  if (anchor.visible) { const s = 1 + Math.sin(T * 2) * .03; anchor.rotation.y = T * 12 * D2R; anchor.scale.set(s, 1, s); }
+  if (stReticle.visible) { const s = 1 + .25 * (1 - eo(c01(st / .5))) + Math.sin(T * 3) * .02; stReticle.scale.set(s, s, 1); stReticle.rotation.z = T * 6 * D2R; }
+
+  // camera position: scripted "walk" with the ship; orientation comes from the phone
+  const off = OFF[state === 'EXPLORE' ? 'SUCCESS' : state === 'INTRO' ? 'START' : state].clone().multiplyScalar(K);
+  let ct, ca;
+  switch (state) {
+    case 'INTRO': case 'START': ct = shipP.clone().add(off); ca = shipP.clone().add(V(0, 12, 0)); break;
+    case 'SCAN': { const k = eio(c01(st / SCAN_DUR)); ct = SHIP0.clone().add(off); ca = V(lerp(-650, 0, k), lerp(70, 160, k), lerp(-250, -800, k)); break; }
+    case 'DETECTED': ct = SHIP0.clone().add(off); ca = V(0, 170, -700); break;
+    case 'APPROACH': ct = shipP.clone().add(off); ca = shipP.clone().lerp(MOUTH, .55).add(V(0, 40, 0)); break;
+    case 'ALIGN': ct = ALIGN_P.clone().add(off); ca = V(MOUTH.x, MOUTH.y + 25, MOUTH.z); break;
+    case 'DOCKING': ct = shipP.clone().add(off); ct.z = Math.max(ct.z, MOUTH.z + 330 * K); ca = shipP.clone().add(V(0, 15, -120)); break;
+    default: ct = DOCK_P.clone().add(off); ca = C.clone().add(V(0, 20, 0));
+  }
+  if (!camP) { camP = ct.clone(); camA = ca.clone(); }
+  vdamp(camP, ct, 2.1, dt); vdamp(camA, ca, 2.6, dt);
+  camera.position.copy(camP);
+  if (gyro && devQ) {
+    if (needCal) calibrate();
+    tgtQ.copy(yawFix).multiply(devQ); camera.quaternion.slerp(tgtQ, .35);
+  } else {
+    const hh = V(Math.sin(T * .63) * 5 + Math.sin(T * 1.7) * 1.6, Math.sin(T * .81 + 1) * 3.6 + Math.sin(T * 2.3), Math.sin(T * .47 + 2) * 4).multiplyScalar(K);
+    camera.position.add(hh);
+    const d = camA.clone().sub(camera.position);
+    camera.rotation.set((Math.atan2(d.y, Math.hypot(d.x, d.z)) * R2D + lookPitch) * D2R, (Math.atan2(-d.x, -d.z) * R2D + lookYaw) * D2R, 0, 'YXZ');
+  }
+  camera.updateMatrixWorld();
+
+  // guidance chevrons ship -> port
+  if (CHEV.includes(state)) {
+    const from = shipP.clone().add(V(0, 0, -190)), to = V(MOUTH.x, MOUTH.y, MOUTH.z + 70), d = to.clone().sub(from), dl = d.length(); d.normalize();
+    const ph = (T * .5) % 1;
+    chevrons.forEach((m, i) => { const f = (i + ph) / 5; m.position.lerpVectors(from, to, f);
+      const s = dl < 160 ? .001 : Math.max(.001, Math.pow(Math.sin(Math.PI * f), .7) * clamp(m.position.distanceTo(camera.position) / 650, .8, 2.6));
+      m.scale.setScalar(s); m.rotation.set((Math.atan2(d.y, -d.z) * R2D + 35) * D2R, Math.asin(clamp(-d.x, -1, 1)), 0); });
+  }
+
+  // station lights
+  const done = state === 'SUCCESS' || state === 'EXPLORE';
+  ringLights.material.opacity = done ? 1 : .72 + .28 * (.5 + .5 * Math.sin(T * 2.4));
+  podLights.material.opacity = done ? 1 : .7;
+  portLights.material.opacity = done ? 1 : (state === 'ALIGN' || state === 'DOCKING') ? .45 + .55 * (.5 + .5 * Math.sin(T * 5)) : .55;
+  portTarget.material.opacity = .55 + .4 * Math.sin(T * 3);
+  portGlow.material.opacity = done ? 1 : state === 'ALIGN' ? .35 + .65 * c01((alignment().A - 60) / 40) : state === 'DOCKING' ? .7 + .3 * Math.sin(T * 9) : .65;
+
+  // spatial labels + off-screen indicator
+  placeLabel($('lShip'), $('lnShip'), $('dtShip'), shipP.clone().add(V(0, 82, 0)), 46, state === 'START');
+  const stShow = state === 'DETECTED' || state === 'APPROACH';
+  placeLabel($('lSt'), $('lnSt'), $('dtSt'), ST_TOP, 40, stShow);
+  const m = Math.max(1.5, shipP.distanceTo(MOUTH) * MPU);
+  if (state === 'START') placeEdge(shipP, 'YOUR SHIP', true);
+  else if (stShow) placeEdge(ST_TOP, 'STATION ' + (state === 'DETECTED' ? '12.4' : m.toFixed(1)) + ' m', true);
+  else if (state === 'ALIGN' || state === 'DOCKING') placeEdge(MOUTH, 'DOCKING PORT', true);
+  else if (done) placeEdge(C, 'STATION', true);
+  else placeEdge(C, '', false);
+
+  // HUD readouts ~10 Hz
+  uiT += dt; if (uiT < .1) return; uiT = 0;
+  if (missionStart !== null && !done) $('clock').textContent = fmt(T - missionStart);
+  if (stShow) {
+    const mm = state === 'DETECTED' ? 12.4 : m, f = c01(mm / 12.4);
+    $('gFill').style.height = (f * 100) + '%'; $('gMark').style.top = ((1 - f) * 100) + '%'; $('gVal').textContent = mm.toFixed(1) + ' m';
+    if (state === 'APPROACH') $('lStV').textContent = mm.toFixed(1) + ' m';
+  }
+  if (state === 'ALIGN') {
+    const a = alignment(), A = locked ? 100 : Math.round(a.A), col = (x) => x > .93 ? 'var(--gr)' : x > .8 ? 'var(--c)' : 'var(--or)', sg = (x) => (x >= 0 ? '+' : '') + x.toFixed(2);
+    $('aPct').textContent = A + '%'; $('aPct').style.color = A >= 95 ? 'var(--gr)' : '';
+    for (const [b, x] of [['bX', a.xs], ['bY', a.ys], ['bR', a.rs]]) { $(b).style.width = (x * 100) + '%'; $(b).style.background = col(x); }
+    $('vX').textContent = sg(ax * MPU); $('vY').textContent = sg(ay * MPU); $('vR').textContent = ar.toFixed(1) + '°';
+    $('rotIco').style.transform = `rotate(${-ar * 3}deg)`;
+  }
+  if (state === 'DOCKING') {
+    const p = Math.round(eio(c01((T - sT) / DOCK_DUR)) * 100);
+    $('dPct').textContent = p + '%'; $('dFill').style.width = p + '%';
+    [...$('dMs').children].forEach((el, i) => el.classList.toggle('on', p >= (i + 1) * 25));
+  }
+}
+
+// initial (behind the intro gate)
+for (const [o] of VIS3D) o.visible = false; anchor.visible = true; chevrons.forEach((m) => m.visible = false); station.scale.setScalar(.001);
+let last = performance.now();
+renderer.setAnimationLoop((now) => {
+  const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now; T += dt; frame++;
+  try { update(dt); } catch (e) { console.error(e); }
+  renderer.render(scene, camera);
+});
+if (NOCAM && DEMO) launch();
+window.__ar = { enter, get state() { return state; } };
+</script>
+</body>
+</html>
