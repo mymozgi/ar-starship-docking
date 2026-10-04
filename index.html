@@ -33,19 +33,9 @@ body.live #bg{display:none}
 body.live #cam{display:block}
 #gl{position:fixed;inset:0;width:100%;height:100%;z-index:1;touch-action:none;display:block}
 
-/* viewfinder + header */
-#vf{position:fixed;inset:12px;pointer-events:none;z-index:4}
-#vf i{position:absolute;width:26px;height:26px;border:0 solid rgba(238,246,250,.55)}
-#vf i:nth-child(1){left:0;top:0;border-width:1.5px 0 0 1.5px;border-top-left-radius:10px}
-#vf i:nth-child(2){right:0;top:0;border-width:1.5px 1.5px 0 0;border-top-right-radius:10px}
-#vf i:nth-child(3){left:0;bottom:0;border-width:0 0 1.5px 1.5px;border-bottom-left-radius:10px}
-#vf i:nth-child(4){right:0;bottom:0;border-width:0 1.5px 1.5px 0;border-bottom-right-radius:10px}
-#hdr{top:calc(24px + env(safe-area-inset-top));left:26px;right:26px;display:flex;justify-content:space-between;align-items:center;z-index:5;pointer-events:none}
-#hdr .r{display:flex;gap:8px}
+/* header */
+#hdr{top:calc(24px + env(safe-area-inset-top));left:26px;right:26px;display:flex;justify-content:flex-end;align-items:center;z-index:5;pointer-events:none}
 .chip{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 12px;border-radius:999px!important;font-size:11px;font-weight:600;letter-spacing:.16em}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--gr);box-shadow:0 0 8px var(--gr);animation:blink 1.8s ease-in-out infinite}
-@keyframes blink{50%{opacity:.35}}
-#clock{color:var(--mut);letter-spacing:.08em;font-weight:500}
 #recenter{pointer-events:auto;cursor:pointer;color:var(--c);padding:0 10px}
 #recenter svg{width:15px;height:15px}
 #cap{top:calc(70px + env(safe-area-inset-top));left:28px;right:28px;pointer-events:none;z-index:5;text-shadow:0 1px 12px rgba(0,0,0,.6)}
@@ -69,12 +59,7 @@ body.live #cam{display:block}
 /* scan overlay */
 #scan{inset:0;z-index:5}
 #scan .ret{position:absolute;left:50%;top:50%;width:220px;height:220px;margin:-110px 0 0 -110px}
-#scan .spin{transform-box:fill-box;transform-origin:center;animation:spin 2.4s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-#scan .line{position:absolute;left:8%;right:8%;height:2px;top:22%;background:linear-gradient(90deg,transparent,var(--c),transparent);box-shadow:0 0 14px var(--c);animation:sweep 1.1s ease-in-out infinite alternate}
-@keyframes sweep{from{top:22%}to{top:78%}}
 #scan .lbl{position:absolute;left:0;right:0;top:50%;margin-top:126px;text-align:center;font-size:12px;letter-spacing:.22em;font-weight:600}
-#scan .lbl span{display:block;margin-top:6px;color:var(--mut);font-size:11px;letter-spacing:.1em;font-weight:400}
 
 /* distance gauge */
 #gauge{right:24px;top:50%;margin-top:-120px;height:240px;width:70px;z-index:5}
@@ -96,8 +81,6 @@ body.pn #cap{opacity:0}
 .hint{margin-top:12px;font-size:11.5px;color:var(--mut);letter-spacing:.02em;transition:color .3s}
 .pb{height:5px;border-radius:5px;background:rgba(238,246,250,.12);overflow:hidden}
 .pb u{display:block;height:100%;width:0;background:linear-gradient(90deg,#3fb6e8,var(--c));border-radius:5px}
-.ms{display:flex;justify-content:space-between;margin-top:10px;font-size:10px;letter-spacing:.12em;color:rgba(238,246,250,.35)}
-.ms span.on{color:var(--c)}
 #result{border-color:rgba(99,230,166,.6)}
 .rh{display:flex;align-items:center;gap:12px;font-size:15px;font-weight:600;letter-spacing:.12em;color:var(--gr);margin-bottom:12px}
 .rh svg{width:30px;height:30px;flex:none}
@@ -153,18 +136,14 @@ body.pn #cap{opacity:0}
  <div id="lSt" class="lbl glass"><div class="t" id="lStT">STATION DETECTED</div><div class="v mono" id="lStV">12.4 m</div></div>
 </div>
 <div id="edge"><div class="a glass"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3l6 5-6 5"/></svg></div><div class="tx glass mono" id="edgeT">STATION</div></div>
-<div id="vf"><i></i><i></i><i></i><i></i></div>
-<div id="hdr" class="ui"><div class="chip glass"><span class="dot"></span><span id="mode">AR MODE</span></div>
- <div class="r"><button id="recenter" class="chip glass" aria-label="Recenter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></button><div class="chip glass mono" id="clock">00:00</div></div></div>
+<div id="hdr" class="ui"><button id="recenter" class="chip glass" aria-label="Recenter view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></button></div>
 <div id="cap" class="ui"><div id="steps"><b></b><b></b><b></b><b></b><b></b><b></b><b></b></div><div id="capN">01 / 07</div><div id="capT">AR MODE</div><div id="capP"></div></div>
 <div id="scan" class="ui deco off">
  <div class="ret"><svg viewBox="0 0 220 220" width="220" height="220">
   <circle cx="110" cy="110" r="104" fill="none" stroke="rgba(127,220,255,.35)" stroke-width="1"/>
-  <circle class="spin" cx="110" cy="110" r="86" fill="none" stroke="#7fdcff" stroke-width="2" stroke-dasharray="5 11"/>
   <circle cx="110" cy="110" r="3" fill="#7fdcff"/>
   <path d="M110 4v20M110 196v20M4 110h20M196 110h20" stroke="#7fdcff" stroke-width="1.5"/></svg></div>
- <div class="line"></div>
- <div class="lbl">SCANNING SPACE<span class="mono" id="scanPct">0%</span></div>
+ <div class="lbl">SCANNING SPACE</div>
 </div>
 <div id="gauge" class="ui deco off"><div class="gt"><div class="gf" id="gFill"></div><div class="gm" id="gMark"></div></div>
  <div class="gl mono"><span>12 m</span><span>9</span><span>6</span><span>3</span><span>0</span></div><div class="gv mono" id="gVal">12.4 m</div></div>
@@ -179,13 +158,12 @@ body.pn #cap{opacity:0}
 <div id="dock" class="ui glass panel off">
  <div class="ah"><span>DOCKING</span><b class="mono" id="dPct">0%</b></div>
  <div class="pb"><u id="dFill"></u></div>
- <div class="ms" id="dMs"><span>25 CAPTURE</span><span>50 SEAL</span><span>75 PRESSURE</span><span>100 LOCK</span></div>
 </div>
 <div id="result" class="ui glass panel off">
  <div class="rh"><svg viewBox="0 0 24 24" fill="none" stroke="#63e6a6" stroke-width="1.5"><circle cx="12" cy="12" r="10.5"/><path d="M7.4 12.4l3.1 3.1 6.1-6.6"/></svg>DOCKING SUCCESSFUL</div>
- <div class="rr"><span>ALIGNMENT</span><b class="mono">100%</b></div>
- <div class="rr"><span>TIME</span><b class="mono" id="rTime">00:00</b></div>
- <div class="rr"><span>SCORE</span><b class="mono">+200</b></div>
+ <div class="rr"><span>TOTAL TIME</span><b class="mono" id="rTime">00:00</b></div>
+ <div class="rr"><span>ALIGNMENT TIME</span><b class="mono" id="rAlign">00:00</b></div>
+ <div class="rr"><span>PRECISION</span><b class="mono" id="rPrec">95%</b></div>
 </div>
 <div id="joy" class="ui pad glass off"><div id="knob"></div><span>MOVE</span></div>
 <div id="rot" class="ui pad glass off"><svg id="rotIco" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4.5 12a7.5 7.5 0 0 1 13-5.1M19.5 12a7.5 7.5 0 0 1-13 5.1"/><path d="M17.8 3.2v4h-4M6.2 20.8v-4h4"/></svg><span>ROTATE</span></div>
@@ -402,6 +380,7 @@ const VISUI = { scan: ['SCAN'], gauge: ['DETECTED', 'APPROACH'], align: ['ALIGN'
 let state = 'INTRO', sT = 0, T = 0, missionStart = null;
 const shipP = SHIP0.clone(), shipR = V(0, 0, 0);
 let ax = 0, ay = 0, ar = 0, locked = false, snapping = false, snapFrom = null, snapT = 0, dragging = 0, spin = 0, spinDrag = 0;
+let alignT0 = 0, alignDur = 0, precision = 0;
 let shipYaw = 32, camP = null, camA = null, lookYaw = 0, lookPitch = 0, uiT = 0, frame = 0;
 const joy = { active: false, x: 0, y: 0, id: null, cx: 0, cy: 0 };
 const alignment = () => { const xs = 1 - Math.abs(ax) / RX, ys = 1 - Math.abs(ay) / RY, rs = 1 - Math.abs(ar) / RR; return { A: 100 * (.35*xs + .35*ys + .3*rs), xs, ys, rs }; };
@@ -419,14 +398,15 @@ function enter(s) {
   const cta = $('cta');
   if (CTA[s]) { $('ctaT').textContent = CTA[s]; $('ctaw').classList.remove('off'); } else $('ctaw').classList.add('off');
   cta.classList.toggle('lock', s === 'ALIGN'); cta.classList.toggle('go', s === 'SUCCESS');
-  if (s === 'START') { missionStart = null; $('clock').textContent = '00:00'; ax = ay = ar = 0; locked = snapping = false; spin = 0;
+  if (s === 'START') { missionStart = null; ax = ay = ar = 0; locked = snapping = false; spin = 0;
     station.scale.setScalar(.001); station.rotation.y = 0; portGlow.material.color.set(0x9fe8ff); bsMat.color.set(0xffa040); arMat.color.set(0x7fdcff); setTun(.15); }
   if (s === 'SCAN') { missionStart = T; station.scale.setScalar(.001); }
   if (s === 'DETECTED') { station.scale.setScalar(1); $('lStT').textContent = 'STATION DETECTED'; $('lStV').textContent = '12.4 m'; }
   if (s === 'APPROACH') $('lStT').textContent = 'APPROACH';
-  if (s === 'ALIGN') { ax = MIS.x; ay = MIS.y; ar = MIS.r; locked = snapping = false; arMat.color.set(0x7fdcff); bsMat.color.set(0xffa040);
+  if (s === 'ALIGN') { ax = MIS.x; ay = MIS.y; ar = MIS.r; locked = snapping = false; alignT0 = T; alignDur = 0; precision = 0; arMat.color.set(0x7fdcff); bsMat.color.set(0xffa040);
     $('aHint').textContent = 'Drag to center the ring on the port · twist to level it'; $('aHint').style.color = ''; }
-  if (s === 'SUCCESS') { const t = T - (missionStart ?? T); $('rTime').textContent = fmt(t); $('clock').textContent = fmt(t); portGlow.material.color.set(0x63e6a6); setTun(1); }
+  if (s === 'SUCCESS') { const t = T - (missionStart ?? T); $('rTime').textContent = fmt(t);
+    $('rAlign').textContent = fmt(alignDur); $('rPrec').textContent = precision ? precision + '%' : '—'; portGlow.material.color.set(0x63e6a6); setTun(1); }
   if (navigator.vibrate && s !== 'START') try { navigator.vibrate(18); } catch (e) {}
 }
 function onLock() {
@@ -492,7 +472,6 @@ async function launch() {
   let motionOK = true;
   if (motionAsk) { try { motionOK = (await motionAsk) === 'granted'; } catch (e) { motionOK = false; } }
   intro.style.opacity = 0; setTimeout(() => intro.remove(), 500);
-  $('mode').textContent = camOK ? 'AR MODE' : '3D PREVIEW';
   enter('START'); resize();
   setTimeout(() => {
     if (!gyro) toast(camOK ? 'No motion sensor access — drag to look around.' : 'Camera unavailable — running as a 3D preview. Drag to look around.', 4200);
@@ -603,7 +582,6 @@ function update(dt) {
     const k = c01(st / 1.9); scanWave.position.lerpVectors(V(SHIP0.x, SHIP0.y + 60, SHIP0.z - 160), V(C.x, C.y, C.z + 150), eo(k));
     const s = lerp(.35, 1.9, k); scanWave.scale.set(s, s, 1); scanWave.material.opacity = .9 * (1 - k);
     station.scale.setScalar(Math.max(.001, back(c01((st - 1.2) / .9))));
-    if (frame % 6 === 0) $('scanPct').textContent = Math.round(c01(st / SCAN_DUR) * 100) + '%';
     if (st >= SCAN_DUR) enter('DETECTED');
   }
   if (state === 'APPROACH') {
@@ -626,11 +604,11 @@ function update(dt) {
     ax = clamp(ax, -RX, RX); ay = clamp(ay, -RY, RY); ar = clamp(ar, -RR, RR);
     if (snapping) { const k = eio(c01((T - snapT) / .55)); ax = lerp(snapFrom.x, 0, k); ay = lerp(snapFrom.y, 0, k); ar = lerp(snapFrom.r, 0, k); if (k >= 1) { snapping = false; onLock(); } }
     const al = alignment();
-    if (!locked && !snapping && al.A >= 95 && dragging === 0 && !joy.active && keys.size === 0) { snapping = true; snapT = T; snapFrom = { x: ax, y: ay, r: ar }; }
+    if (!locked && !snapping && al.A >= 95 && dragging === 0 && !joy.active && keys.size === 0) { snapping = true; snapT = T; snapFrom = { x: ax, y: ay, r: ar }; precision = Math.round(al.A); alignDur = T - alignT0; }
     shipP.set(ALIGN_P.x + ax, ALIGN_P.y + ay + bob * .4, ALIGN_P.z); shipR.set(Math.sin(T * .9) * .5, 0, ar);
     bores.position.set(ALIGN_P.x + ax * 2, ALIGN_P.y + ay * 2, MOUTH.z + 34); bores.rotation.z = ar * 1.5 * D2R;
     if (!locked) bsMat.color.set(al.A >= 95 ? 0x63e6a6 : al.A >= 88 ? 0x7fdcff : 0xffa040);
-    const br = locked ? .94 : 1 + Math.sin(T * 2.4) * .015; alignRet.scale.set(br, br, 1);
+    const br = locked ? .94 : 1; alignRet.scale.set(br, br, 1);
   }
   if (state === 'DOCKING') {
     const e = eio(c01(st / DOCK_DUR)); shipP.lerpVectors(ALIGN_P, DOCK_P, e); shipR.set(0, 0, 0); ef = lerp(.85, .25, e);
@@ -652,8 +630,7 @@ function update(dt) {
   for (const en of engines) { en.p.scale.set(w, L, w); en.p.position.z = 57.5 + 55 + 23 * L; en.g.scale.set(g, 1, g); }
   engLight.intensity = 2.2 * ef;
 
-  if (anchor.visible) { const s = 1 + Math.sin(T * 2) * .03; anchor.rotation.y = T * 12 * D2R; anchor.scale.set(s, 1, s); }
-  if (stReticle.visible) { const s = 1 + .25 * (1 - eo(c01(st / .5))) + Math.sin(T * 3) * .02; stReticle.scale.set(s, s, 1); stReticle.rotation.z = T * 6 * D2R; }
+  if (stReticle.visible) { const s = 1 + .25 * (1 - eo(c01(st / .5))); stReticle.scale.set(s, s, 1); }
 
   // camera position: scripted "walk" with the ship; orientation comes from the phone
   const off = OFF[state === 'EXPLORE' ? 'SUCCESS' : state === 'INTRO' ? 'START' : state].clone().multiplyScalar(K);
@@ -692,11 +669,11 @@ function update(dt) {
 
   // station lights
   const done = state === 'SUCCESS' || state === 'EXPLORE';
-  ringLights.material.opacity = done ? 1 : .72 + .28 * (.5 + .5 * Math.sin(T * 2.4));
+  ringLights.material.opacity = done ? 1 : .85;
   podLights.material.opacity = done ? 1 : .7;
-  portLights.material.opacity = done ? 1 : (state === 'ALIGN' || state === 'DOCKING') ? .45 + .55 * (.5 + .5 * Math.sin(T * 5)) : .55;
-  portTarget.material.opacity = .55 + .4 * Math.sin(T * 3);
-  portGlow.material.opacity = done ? 1 : state === 'ALIGN' ? .35 + .65 * c01((alignment().A - 60) / 40) : state === 'DOCKING' ? .7 + .3 * Math.sin(T * 9) : .65;
+  portLights.material.opacity = done ? 1 : .6;
+  portTarget.material.opacity = .7;
+  portGlow.material.opacity = done ? 1 : state === 'ALIGN' ? .35 + .65 * c01((alignment().A - 60) / 40) : state === 'DOCKING' ? .9 : .65;
 
   // spatial labels + off-screen indicator
   placeLabel($('lShip'), $('lnShip'), $('dtShip'), shipP.clone().add(V(0, 82, 0)), 46, state === 'START');
@@ -711,7 +688,6 @@ function update(dt) {
 
   // HUD readouts ~10 Hz
   uiT += dt; if (uiT < .1) return; uiT = 0;
-  if (missionStart !== null && !done) $('clock').textContent = fmt(T - missionStart);
   if (stShow) {
     const mm = state === 'DETECTED' ? 12.4 : m, f = c01(mm / 12.4);
     $('gFill').style.height = (f * 100) + '%'; $('gMark').style.top = ((1 - f) * 100) + '%'; $('gVal').textContent = mm.toFixed(1) + ' m';
@@ -726,9 +702,7 @@ function update(dt) {
   }
   if (state === 'DOCKING') {
     const p = Math.round(eio(c01((T - sT) / DOCK_DUR)) * 100);
-    $('dPct').textContent = p + '%'; $('dFill').style.width = p + '%';
-    [...$('dMs').children].forEach((el, i) => el.classList.toggle('on', p >= (i + 1) * 25));
-  }
+    $('dPct').textContent = p + '%'; $('dFill').style.width = p + '%';  }
 }
 
 // initial (behind the intro gate)
