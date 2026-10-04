@@ -83,23 +83,32 @@ body.live #cam{display:block}
 #gauge .gv span.ok{color:var(--gr)}#gauge .gv span.bad{color:var(--red)}
 
 /* panels */
-.panel{top:calc(68px + env(safe-area-inset-top));left:0;right:0;margin:0 auto;width:min(340px,calc(100% - 40px));padding:16px 18px;z-index:6}
-.ah{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;letter-spacing:.14em;font-weight:600;margin-bottom:10px}
-.ah b{font-size:22px;font-weight:500;color:var(--c);letter-spacing:.02em;transition:color .3s}
-.row{display:grid;grid-template-columns:78px 1fr 58px;align-items:center;gap:10px;font-size:11px;letter-spacing:.12em;color:var(--mut);margin-top:9px}
-.row i,.pb{height:4px;border-radius:4px;background:rgba(242,247,250,.12);overflow:hidden;display:block}
-.row u,.pb u{display:block;height:100%;width:50%;background:var(--c);border-radius:4px;transition:width .12s linear,background .3s}
-.row em{font-style:normal;text-align:right;color:var(--ink);font-size:12px;letter-spacing:0}
-.pb{height:5px}.pb u{width:0}
-#capRow{margin-top:12px}#capRow u{background:var(--gr)}
-#result{border-color:rgba(99,230,166,.55)}
-.rh{display:flex;align-items:center;gap:12px;font-size:14px;font-weight:600;letter-spacing:.12em;color:var(--gr)}
-.rh svg{width:28px;height:28px;flex:none}
-.score{display:flex;align-items:baseline;gap:12px;margin:12px 0 6px 40px}
-.score b{font-size:40px;font-weight:500;line-height:1}
-.score span{font-size:18px;font-weight:600;color:var(--gr);letter-spacing:.06em}
-.rr{display:flex;justify-content:space-between;font-size:11px;letter-spacing:.12em;color:var(--mut);padding:7px 0 0 40px}
-.rr b{font-size:14px;color:var(--ink);font-weight:500;letter-spacing:.02em}
+/* one grid for every panel: 20px padding, label | bar | value columns, 24px rows */
+.panel{top:calc(68px + env(safe-area-inset-top));left:0;right:0;margin:0 auto;width:min(340px,calc(100% - 32px));padding:18px 20px;z-index:6}
+.cap{font-size:11px;font-weight:600;letter-spacing:.14em;color:var(--mut);line-height:1}
+.ah{display:flex;justify-content:space-between;align-items:center;height:28px;margin-bottom:10px}
+.ah .cap{color:var(--ink)}
+.ah b{font-size:24px;font-weight:500;line-height:1;color:var(--c);transition:color .3s}
+.rows{display:grid;row-gap:4px}
+.row{display:grid;grid-template-columns:68px 1fr 76px;align-items:center;column-gap:12px;height:24px}
+.row i{height:4px;border-radius:4px;background:rgba(242,247,250,.12);overflow:hidden;display:block}
+.row u{display:block;height:100%;width:0;background:var(--c);border-radius:4px;transition:width .12s linear,background .3s}
+.row em{font-style:normal;text-align:right;color:var(--ink);font-size:13px;line-height:1;white-space:nowrap}
+.sep{height:1px;background:rgba(242,247,250,.1);margin:12px 0}
+#bC{background:var(--gr)}
+#result{border-color:rgba(99,230,166,.5)}
+.rh{display:flex;align-items:center;gap:10px;height:24px;color:var(--gr)}
+.rh .cap{color:var(--gr)}
+.rh svg{width:22px;height:22px;flex:none}
+.score{display:grid;grid-template-columns:1fr auto;align-items:end;margin-top:16px}
+.score .cap{display:block;margin-bottom:8px}
+.score b{display:block;font-size:44px;font-weight:500;line-height:1}
+.score .gr{text-align:right}.score .gr b{color:var(--gr)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+.stat .cap{display:block;margin-bottom:6px}
+.stat b{display:block;font-size:17px;font-weight:500;line-height:1}
+.note{margin-top:14px;font-size:12px;color:var(--or)}
+.note:empty{display:none}
 
 /* touch surfaces */
 #drag{position:fixed;inset:0;z-index:3;touch-action:none;cursor:grab}
@@ -130,9 +139,10 @@ body.live #cam{display:block}
 #go{height:58px;border-radius:18px;font-weight:600;font-size:14px;letter-spacing:.16em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:12px;border-color:var(--c)}
 #go svg{width:16px;height:16px}
 #intro small{display:block;margin-top:14px;text-align:center;color:rgba(242,247,250,.42);font-size:11px;letter-spacing:.03em}
-#toast{left:50%;top:calc(120px + env(safe-area-inset-top));transform:translateX(-50%);z-index:9;padding:10px 14px;font-size:12.5px;max-width:calc(100% - 40px);text-align:center;border-radius:12px}
-#toast.off{transform:translateX(-50%) translateY(-8px)}
+#toast{left:50%;bottom:calc(158px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9;padding:10px 14px;font-size:12.5px;max-width:calc(100% - 40px);text-align:center;border-radius:12px}
+#toast.off{transform:translateX(-50%) translateY(8px)}
 @media (max-height:620px){.panel{top:calc(60px + env(safe-area-inset-top))}#say{bottom:96px}}
+@media (max-width:380px){#top{left:16px;right:16px}#steps{gap:4px}#steps b{width:11px}.chip{padding:0 9px}}
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
 </head>
@@ -149,7 +159,7 @@ body.live #cam{display:block}
 <div id="edge"><div class="a glass"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3l6 5-6 5"/></svg></div><div class="tx glass mono" id="edgeT">STATION</div></div>
 <div id="top" class="ui"><div id="steps"><b></b><b></b><b></b><b></b><b></b><b></b><b></b></div>
  <div class="r">
-  <div id="fuel" class="chip glass mono off"><span>FUEL</span><i><u id="fuelU"></u></i></div>
+  <div id="fuel" class="chip glass off" aria-label="Fuel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3.5s-5.5 6-5.5 10.2a5.5 5.5 0 0 0 11 0C17.5 9.5 12 3.5 12 3.5z"/></svg><i><u id="fuelU"></u></i></div>
   <button id="snd" class="chip glass btn" aria-label="Sound"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path id="sndWave" d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a7.8 7.8 0 0 1 0 11"/><path id="sndOff" d="M16 9.5l5 5M21 9.5l-5 5" style="display:none"/></svg></button>
   <button id="recenter" class="chip glass btn" aria-label="Recenter view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></button>
  </div></div>
@@ -163,23 +173,33 @@ body.live #cam{display:block}
  <div class="zl">BRAKE</div><div class="gv mono"><b id="gDist">1.68 m</b><span id="gSpd">0.00 m/s</span></div></div>
 <div id="drag" class="off"></div>
 <div id="align" class="ui glass panel off">
- <div class="ah"><span>ALIGNMENT</span><b class="mono" id="aPct">82%</b></div>
- <div class="row"><span>X</span><i><u id="bX"></u></i><em class="mono" id="vX">+0.00</em></div>
- <div class="row"><span>Y</span><i><u id="bY"></u></i><em class="mono" id="vY">+0.00</em></div>
- <div class="row"><span>ROTATION</span><i><u id="bR"></u></i><em class="mono" id="vR">0.0°</em></div>
- <div class="row" id="capRow"><span>CAPTURE</span><i><u id="bC" style="width:0"></u></i><em class="mono" id="vC"></em></div>
+ <div class="ah"><span class="cap">ALIGNMENT</span><b class="mono" id="aPct">82%</b></div>
+ <div class="rows">
+  <div class="row"><span class="cap">X</span><i><u id="bX"></u></i><em class="mono" id="vX">+1.2 cm</em></div>
+  <div class="row"><span class="cap">Y</span><i><u id="bY"></u></i><em class="mono" id="vY">−0.8 cm</em></div>
+  <div class="row"><span class="cap">ROLL</span><i><u id="bR"></u></i><em class="mono" id="vR">+8.0°</em></div>
+ </div>
+ <div class="sep"></div>
+ <div class="row"><span class="cap">CAPTURE</span><i><u id="bC"></u></i><em class="mono" id="vC">—</em></div>
 </div>
 <div id="dock" class="ui glass panel off">
- <div class="ah"><span>DOCKING</span><b class="mono" id="dPct">0%</b></div>
- <div class="pb"><u id="dFill"></u></div>
+ <div class="ah"><span class="cap">DOCKING</span><b class="mono" id="dPct">0%</b></div>
+ <div class="rows">
+  <div class="row"><span class="cap">LATCH</span><i><u id="bD"></u></i><em class="mono" id="vD">31.1 cm</em></div>
+  <div class="row"><span class="cap">SPEED</span><i><u id="bS"></u></i><em class="mono" id="vS">0.0 cm/s</em></div>
+ </div>
 </div>
 <div id="result" class="ui glass panel off">
- <div class="rh"><svg viewBox="0 0 24 24" fill="none" stroke="#63e6a6" stroke-width="1.5"><circle cx="12" cy="12" r="10.5"/><path d="M7.4 12.4l3.1 3.1 6.1-6.6"/></svg>DOCKING SUCCESSFUL</div>
- <div class="score"><b class="mono" id="rScore">0</b><span id="rGrade">A</span></div>
- <div class="rr"><span>TIME</span><b class="mono" id="rTime">00:00</b></div>
- <div class="rr"><span>ARRIVAL SPEED</span><b class="mono" id="rSpd">0.00 m/s</b></div>
- <div class="rr"><span>PRECISION</span><b class="mono" id="rPrec">95%</b></div>
- <div class="rr"><span>FUEL LEFT</span><b class="mono" id="rFuel">100%</b></div>
+ <div class="rh"><svg viewBox="0 0 24 24" fill="none" stroke="#63e6a6" stroke-width="1.5"><circle cx="12" cy="12" r="10.5"/><path d="M7.4 12.4l3.1 3.1 6.1-6.6"/></svg><span class="cap">DOCKING SUCCESSFUL</span></div>
+ <div class="score"><div><span class="cap">SCORE</span><b class="mono" id="rScore">0</b></div><div class="gr"><span class="cap">GRADE</span><b id="rGrade">A</b></div></div>
+ <div class="sep"></div>
+ <div class="stats">
+  <div class="stat"><span class="cap">TIME</span><b class="mono" id="rTime">00:00</b></div>
+  <div class="stat"><span class="cap">ARRIVAL SPEED</span><b class="mono" id="rSpd">0.00 m/s</b></div>
+  <div class="stat"><span class="cap">PRECISION</span><b class="mono" id="rPrec">95%</b></div>
+  <div class="stat"><span class="cap">FUEL LEFT</span><b class="mono" id="rFuel">100%</b></div>
+ </div>
+ <div class="note" id="rNote"></div>
 </div>
 <div id="rot" class="ui pad glass off"><svg id="rotIco" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4.5 12a7.5 7.5 0 0 1 13-5.1M19.5 12a7.5 7.5 0 0 1-13 5.1"/><path d="M17.8 3.2v4h-4M6.2 20.8v-4h4"/></svg><span>ROTATE</span></div>
 <div id="say" class="ui"></div>
@@ -211,6 +231,7 @@ const vdamp = (a, b, r, dt) => a.lerp(b, 1 - Math.exp(-r * dt));
 const eio = (p) => p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2, eo = (p) => 1 - Math.pow(1 - p, 3);
 const back = (p) => { const c = 1.70158, q = p - 1; return 1 + (c + 1) * q * q * q + c * q * q; };
 const bez = (a, b, c, d, t) => { const u = 1 - t; return a.clone().multiplyScalar(u*u*u).addScaledVector(b, 3*u*u*t).addScaledVector(c, 3*u*t*t).addScaledVector(d, t*t*t); };
+const sgn = (x) => (x < -.05 ? '−' : '+') + Math.abs(x).toFixed(1);
 const fmt = (s) => { s = Math.max(0, Math.floor(s)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
 let toastT = 0;
 const toast = (m, ms = 3200) => { const t = $('toast'); t.textContent = m; t.classList.remove('off'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.add('off'), ms); };
@@ -452,7 +473,7 @@ let state = 'INTRO', sT = 0, T = 0, missionStart = null, fuel = 100, shakeT = -9
 const shipP = SHIP0.clone(), shipR = V(0, 0, 0);
 const ap = { s: 0, v: 0, touched: false, over: 0, arrival: 0, braking: false, lock: 0 };
 let tx = 0, ty = 0, tr = 0, ax = 0, ay = 0, ar = 0, locked = false, snapping = false, snapFrom = null, snapT = 0, capHold = 0, precSum = 0, precN = 0, precision = 0;
-let thrusting = false, demoThrust = false, spin = 0, shipYaw = 32, camP = null, camA = null, lookYaw = 0, lookPitch = 0, uiT = 0, frame = 0, lastSay = null;
+let dockLast = null, thrusting = false, demoThrust = false, spin = 0, shipYaw = 32, camP = null, camA = null, lookYaw = 0, lookPitch = 0, uiT = 0, frame = 0, lastSay = null;
 const alignment = () => { const xs = 1 - Math.abs(ax) / RX, ys = 1 - Math.abs(ay) / RY, rs = 1 - Math.abs(ar) / RR; return { A: 100 * (.35*xs + .35*ys + .3*rs), xs, ys, rs }; };
 const setTun = (a) => tunnelLights.forEach((m) => m.material.opacity = a);
 const setSay = (t, cls = '') => { const k = t + '|' + cls; if (k === lastSay) return; lastSay = k; const el = $('say'); el.textContent = t; el.className = 'ui ' + cls + (t ? '' : ' off'); };
@@ -482,7 +503,8 @@ function enter(s) {
     const sPrec = precision || 95, sArr = c01(1 - (ap.arrival - 40) / (AP.safe - 40)) * 100, sTime = c01(1 - (t - 25) / 45) * 100;
     const score = Math.max(0, Math.round(sPrec * 4 + fuel * 2.5 + sArr * 2 + sTime * 1.5) - ap.over * 80);
     $('rScore').textContent = score; $('rGrade').textContent = score >= 900 ? 'S' : score >= 780 ? 'A' : score >= 620 ? 'B' : 'C';
-    $('rTime').textContent = fmt(t); $('rSpd').textContent = (ap.arrival * MPU).toFixed(2) + ' m/s' + (ap.over ? ` · ${ap.over} retr${ap.over > 1 ? 'ies' : 'y'}` : '');
+    $('rTime').textContent = fmt(t); $('rSpd').textContent = (ap.arrival * MPU).toFixed(2) + ' m/s';
+    $('rNote').textContent = ap.over ? `${ap.over} overspeed retr${ap.over > 1 ? 'ies' : 'y'} · −${ap.over * 80} pts` : '';
     $('rPrec').textContent = sPrec + '%'; $('rFuel').textContent = Math.round(fuel) + '%';
     portGlow.material.color.set(0x63e6a6); portHalo.material.color.set(0x63e6a6); setTun(1); sfx.success();
   }
@@ -837,14 +859,21 @@ function update(dt) {
     sp.textContent = (Math.abs(ap.v) * MPU).toFixed(2) + ' m/s'; sp.className = r < AP.brake ? (ap.v > AP.safe ? 'bad' : 'ok') : '';
   }
   if (state === 'ALIGN') {
-    const a = alignment(), A = locked ? 100 : Math.round(a.A), col = (x) => x > .93 ? 'var(--gr)' : x > .8 ? 'var(--c)' : 'var(--or)', sg = (x) => (x >= 0 ? '+' : '') + x.toFixed(3);
+    const a = alignment(), A = locked ? 100 : Math.round(a.A), col = (x) => x > .93 ? 'var(--gr)' : x > .8 ? 'var(--c)' : 'var(--or)';
     $('aPct').textContent = A + '%'; $('aPct').style.color = A >= 95 ? 'var(--gr)' : '';
     for (const [b, x] of [['bX', a.xs], ['bY', a.ys], ['bR', a.rs]]) { $(b).style.width = (x * 100) + '%'; $(b).style.background = col(x); }
-    $('vX').textContent = sg(ax * MPU); $('vY').textContent = sg(ay * MPU); $('vR').textContent = ar.toFixed(1) + '°';
-    const cf = locked ? 1 : c01(capHold / .6); $('bC').style.width = (cf * 100) + '%'; $('vC').textContent = locked ? 'LOCKED' : cf > 0 ? Math.round(cf * 100) + '%' : '';
+    $('vX').textContent = sgn(ax / 10) + ' cm'; $('vY').textContent = sgn(ay / 10) + ' cm'; $('vR').textContent = sgn(ar) + '°';
+    const cf = locked ? 1 : c01(capHold / .6), vc = $('vC'); $('bC').style.width = (cf * 100) + '%';
+    vc.textContent = locked ? 'LOCKED' : cf > 0 ? Math.round(cf * 100) + '%' : '—'; vc.style.color = locked ? 'var(--gr)' : '';
     $('rotIco').style.transform = `rotate(${-ar * 3}deg)`;
   }
-  if (state === 'DOCKING') { const p = Math.round(eio(c01((T - sT) / DOCK_DUR)) * 100); $('dPct').textContent = p + '%'; $('dFill').style.width = p + '%'; }
+  if (state === 'DOCKING') {
+    const p = Math.round(eio(c01((T - sT) / DOCK_DUR)) * 100), latch = shipP.distanceTo(DOCK_P) / 10, total = ALIGN_P.distanceTo(DOCK_P) / 10;
+    const spd = dockLast == null ? 0 : Math.max(0, (dockLast - latch) / .1); dockLast = latch;
+    $('dPct').textContent = p + '%';
+    $('bD').style.width = (c01(1 - latch / total) * 100) + '%'; $('vD').textContent = latch.toFixed(1) + ' cm';
+    $('bS').style.width = (c01(spd / 12) * 100) + '%'; $('vS').textContent = spd.toFixed(1) + ' cm/s';
+  } else dockLast = null;
 }
 
 // initial (behind the intro gate)
